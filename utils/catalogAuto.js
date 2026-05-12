@@ -1,4 +1,5 @@
 const slugify = require('./slugify');
+const { getServiceAliases } = require('./searchAliases');
 
 const BUSINESS_NAME = 'Vishwakarma Build & Furnish CKD';
 const CITY = 'Charkhi Dadri';
@@ -28,23 +29,33 @@ const buildServiceTags = (name = '', categoryName = '') => {
     .replace(/services|solutions/g, '')
     .split(/\s+/)
     .filter(Boolean);
+  const aliases = getServiceAliases(name).slice(0, 30);
 
   return unique([
     baseName,
     ...words,
     ...categoryWords,
+    ...aliases,
+    `${baseName} images`,
+    `latest ${baseName} design`,
+    `best ${baseName} in ${CITY.toLowerCase()}`,
     'interior',
     CITY.toLowerCase()
   ]);
 };
 
-const buildServiceAutoFields = (name = '', categoryName = '') => ({
-  slug: `${slugify(name)}-${slugify(CITY)}`,
-  seoTitle: `Best ${titleCase(name)} in ${CITY} | ${BUSINESS_NAME}`,
-  seoDescription: `Luxury ${name.toLowerCase()} solutions in ${CITY} with premium materials and modern designs.`,
-  tags: buildServiceTags(name, categoryName),
-  isActive: true
-});
+const buildServiceAutoFields = (name = '', categoryName = '') => {
+  const aliases = getServiceAliases(name).slice(0, 8);
+  const aliasText = aliases.length ? ` Also searched as ${aliases.join(', ')}.` : '';
+
+  return {
+    slug: `${slugify(name)}-${slugify(CITY)}`,
+    seoTitle: `Best ${titleCase(name)} in ${CITY} | ${BUSINESS_NAME}`,
+    seoDescription: `Luxury ${name.toLowerCase()} solutions in ${CITY} with premium materials, latest designs, images, and modern finishing.${aliasText}`.slice(0, 300),
+    tags: buildServiceTags(name, categoryName),
+    isActive: true
+  };
+};
 
 module.exports = {
   BUSINESS_NAME,

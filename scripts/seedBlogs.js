@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 const Service = require('../models/Service');
+const { getServiceAliases } = require('../utils/searchAliases');
 
 dotenv.config();
 
@@ -61,6 +62,8 @@ const slugify = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const unique = (items = []) => [...new Set(items.map((item) => item?.toString().trim()).filter(Boolean))];
+
 const buildContent = (title, serviceName) => `
 ${title}
 
@@ -94,7 +97,7 @@ const seedBlogs = async () => {
   let created = 0;
   let updated = 0;
 
-  const activeServices = await Service.find({ isActive: true }).select('_id slug name heroImage images');
+  const activeServices = await Service.find({ isActive: true }).select('_id slug name heroImage images tags');
   const allBlogSeeds = [
     ...blogSeeds,
     ...activeServices
@@ -104,6 +107,7 @@ const seedBlogs = async () => {
 
   for (const blogSeed of allBlogSeeds) {
     const service = await Service.findOne({ slug: blogSeed.serviceSlug });
+    const aliases = getServiceAliases(service?.name || blogSeed.title);
 
     const payload = {
       title: blogSeed.title,
@@ -115,7 +119,14 @@ const seedBlogs = async () => {
       relatedServices: service?._id ? [service._id] : [],
       seoTitle: `${blogSeed.title} | Best ${service?.name || 'Furniture'} in Charkhi Dadri`,
       seoDescription: blogSeed.excerpt,
-      tags: [...blogSeed.tags, 'vishwakarma build furnish', 'charkhi dadri', 'haryana'],
+      tags: unique([
+        ...blogSeed.tags,
+        ...(service?.tags || []),
+        ...aliases,
+        'vishwakarma build furnish',
+        'charkhi dadri',
+        'haryana'
+      ]),
       featured: true,
       isActive: true,
       order: blogSeed.order,
