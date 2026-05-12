@@ -7,15 +7,6 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/industrial-equipment-solutions';
 
-const priorityServiceSlugs = [
-  'wooden-doors-charkhi-dadri',
-  'wooden-windows-charkhi-dadri',
-  'ply-board-door-charkhi-dadri',
-  'wooden-jali-single-double-doors-charkhi-dadri',
-  'double-bed-charkhi-dadri',
-  'modular-kitchen-charkhi-dadri'
-];
-
 const blogSeeds = [
   {
     serviceSlug: 'wooden-doors-charkhi-dadri',
@@ -73,24 +64,45 @@ const slugify = (value = '') =>
 const buildContent = (title, serviceName) => `
 ${title}
 
-Vishwakarma Build & Furnish CKD provides professional ${serviceName.toLowerCase()} service in Charkhi Dadri and nearby Haryana areas. Every project is planned according to the client's space, budget, material preference, and design taste.
+Vishwakarma Build & Furnish CKD provides professional ${serviceName.toLowerCase()} service in Charkhi Dadri and nearby Haryana areas. If you are checking ${serviceName.toLowerCase()} images, latest ${serviceName.toLowerCase()} designs, material options, finishing quality, or the best ${serviceName.toLowerCase()} maker near you, this guide will help you compare the right choices.
 
 Our team focuses on premium material selection, strong workmanship, clean finishing, and practical designs that look beautiful and remain useful for daily life. Whether you need work for a new home, renovation, shop, office, or rental property, we customize every detail according to your requirement.
 
+For image search and design comparison, always check the wood or board quality, polish or laminate finish, edge finishing, hardware, measurements, and long-term maintenance. A design may look good online, but the final result becomes better when it is made according to your wall size, room use, sunlight, moisture, and daily handling.
+
 Pricing depends on your required quality, design, size, material, and total project quantity. For the best deal and proper guidance, contact Vishwakarma Build & Furnish CKD for a free consultation.
 `.trim();
+
+const buildGenericBlogSeed = (service, index) => ({
+  serviceSlug: service.slug,
+  title: `Latest ${service.name} Designs in Charkhi Dadri`,
+  excerpt: `Check ${service.name.toLowerCase()} images, latest designs, material options, finishing quality, and custom work in Charkhi Dadri, Haryana.`,
+  tags: [
+    service.name.toLowerCase(),
+    `${service.name.toLowerCase()} images`,
+    `latest ${service.name.toLowerCase()} design`,
+    `best ${service.name.toLowerCase()} in charkhi dadri`,
+    'furniture',
+    'haryana'
+  ],
+  order: 20 + index
+});
 
 const seedBlogs = async () => {
   await mongoose.connect(MONGODB_URI);
 
   let created = 0;
   let updated = 0;
-  const priorityServices = await Service.find({ slug: { $in: priorityServiceSlugs } }).select('_id slug');
-  const priorityServiceIds = priorityServiceSlugs
-    .map((serviceSlug) => priorityServices.find((service) => service.slug === serviceSlug)?._id)
-    .filter(Boolean);
 
-  for (const blogSeed of blogSeeds) {
+  const activeServices = await Service.find({ isActive: true }).select('_id slug name heroImage images');
+  const allBlogSeeds = [
+    ...blogSeeds,
+    ...activeServices
+      .filter((service) => !blogSeeds.some((seed) => seed.serviceSlug === service.slug))
+      .map(buildGenericBlogSeed)
+  ];
+
+  for (const blogSeed of allBlogSeeds) {
     const service = await Service.findOne({ slug: blogSeed.serviceSlug });
 
     const payload = {
@@ -100,10 +112,10 @@ const seedBlogs = async () => {
       content: buildContent(blogSeed.title, service?.name || blogSeed.title),
       coverImage: service?.heroImage || service?.images?.[0] || '',
       category: 'Furniture',
-      relatedServices: priorityServiceIds.length ? priorityServiceIds : service ? [service._id] : [],
-      seoTitle: `${blogSeed.title} | Vishwakarma Build & Furnish CKD`,
+      relatedServices: service?._id ? [service._id] : [],
+      seoTitle: `${blogSeed.title} | Best ${service?.name || 'Furniture'} in Charkhi Dadri`,
       seoDescription: blogSeed.excerpt,
-      tags: [...blogSeed.tags, 'vishwakarma build furnish', 'haryana'],
+      tags: [...blogSeed.tags, 'vishwakarma build furnish', 'charkhi dadri', 'haryana'],
       featured: true,
       isActive: true,
       order: blogSeed.order,

@@ -87,6 +87,7 @@ app.use('/api/gallery', require('./routes/gallery')); // Gallery routes
 app.use('/api/inquiries', require('./routes/inquiries')); // Keep inquiries route
 app.use('/api/auth', require('./routes/auth')); // Auth routes
 app.use('/api/tenders', require('./routes/tenderRoutes')); // Tender routes with PDF upload
+app.use(require('./routes/seo'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
