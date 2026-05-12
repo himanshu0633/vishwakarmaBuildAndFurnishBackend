@@ -2,6 +2,46 @@ const Service = require('../models/Service');
 const Category = require('../models/Category');
 const { buildServiceAutoFields } = require('../utils/catalogAuto');
 
+const featuredServicePriority = [
+  'wooden doors',
+  'wooden windows',
+  'ply board door',
+  'wooden jali doors',
+  'pvc panels'
+];
+
+const normalizePriorityName = (value = '') =>
+  value
+    .toString()
+    .toLowerCase()
+    .replace(/single[-\s]*double/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const featuredPriorityIndex = (service) => {
+  const name = normalizePriorityName(service?.name);
+  const slug = normalizePriorityName(service?.slug);
+
+  const index = featuredServicePriority.findIndex(priority =>
+    name === priority || slug.startsWith(priority)
+  );
+
+  return index === -1 ? featuredServicePriority.length : index;
+};
+
+const sortFeaturedServices = (services = []) =>
+  services.sort((first, second) => {
+    const firstPriority = featuredPriorityIndex(first);
+    const secondPriority = featuredPriorityIndex(second);
+
+    if (firstPriority !== secondPriority) {
+      return firstPriority - secondPriority;
+    }
+
+    return 0;
+  });
+
 const asArray = (value) => {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (!value) return [];
@@ -502,10 +542,13 @@ exports.getAllServices = async (req, res) => {
       .populate('categoryId', servicePopulate)
       .populate('relatedServices', 'name slug shortDescription emoji heroImage images priceStarting featured popular')
       .sort({ order: 1, featured: -1, popular: -1, name: 1 });
+    const orderedServices = req.query.featured === 'true'
+      ? sortFeaturedServices([...services])
+      : services;
 
     res.json({
       success: true,
-      data: services
+      data: orderedServices
     });
   } catch (error) {
     console.error('Error fetching services:', error);
