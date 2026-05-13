@@ -1,6 +1,7 @@
 const Service = require('../models/Service');
 const Category = require('../models/Category');
 const { buildServiceAutoFields } = require('../utils/catalogAuto');
+const { publicUploadPath } = require('../utils/uploadStorage');
 
 const featuredServicePriority = [
   'wooden doors',
@@ -70,9 +71,25 @@ const normalizeFaq = (value) => {
     .filter(item => item.question || item.answer);
 };
 
-const normalizeServicePayload = (body, categoryName = '') => {
+const getFirstUploadedFile = (req) => {
+  if (req.file) return req.file;
+
+  if (!req.files || typeof req.files !== 'object') {
+    return null;
+  }
+
+  return [
+    ...(req.files.heroImageFile || []),
+    ...(req.files.imageFile || []),
+    ...(req.files.heroImage || []),
+    ...(req.files.image || [])
+  ].find(Boolean) || null;
+};
+
+const normalizeServicePayload = (body, categoryName = '', file) => {
   const name = body.name || '';
   const autoFields = buildServiceAutoFields(name, categoryName);
+  const uploadedImage = file ? publicUploadPath('services', file.filename) : '';
 
   const payload = {
     categoryId: body.categoryId,
@@ -81,7 +98,7 @@ const normalizeServicePayload = (body, categoryName = '') => {
     shortDescription: body.shortDescription || '',
     fullDescription: body.fullDescription || '',
     emoji: body.emoji || '🔧',
-    heroImage: body.heroImage || '',
+    heroImage: uploadedImage || body.heroImage || '',
     popular: Boolean(body.popular),
     featured: Boolean(body.featured),
     priceStarting: body.priceStarting || '',
@@ -293,7 +310,7 @@ exports.searchServices = async (req, res) => {
 exports.createService = async (req, res) => {
   try {
     const category = await Category.findById(req.body.categoryId);
-    const payload = normalizeServicePayload(req.body, category?.name || '');
+    const payload = normalizeServicePayload(req.body, category?.name || '', getFirstUploadedFile(req));
 
     if (!payload.name) {
       return res.status(400).json({
@@ -340,7 +357,7 @@ exports.updateService = async (req, res) => {
     const category = req.body.categoryId
       ? await Category.findById(req.body.categoryId)
       : null;
-    const payload = normalizeServicePayload(req.body, category?.name || '');
+    const payload = normalizeServicePayload(req.body, category?.name || '', getFirstUploadedFile(req));
 
     if (payload.categoryId) {
       if (!category) {
@@ -426,14 +443,14 @@ exports.uploadServiceMedia = async (req, res) => {
 
     const collectUrls = (fieldName, matcher = () => true) => (files[fieldName] || [])
       .filter(matcher)
-      .map(file => `/uploads/services/${file.filename}`);
+      .map(file => publicUploadPath('services', file.filename));
 
     const legacyFiles = files.media || [];
     const legacyImageUrls = [];
     const legacyVideoUrls = [];
 
     legacyFiles.forEach((file) => {
-      const fileUrl = `/uploads/services/${file.filename}`;
+      const fileUrl = publicUploadPath('services', file.filename);
 
       if (file.mimetype.startsWith('video/')) {
         legacyVideoUrls.push(fileUrl);

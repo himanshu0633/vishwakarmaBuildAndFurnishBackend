@@ -1,9 +1,10 @@
 const GalleryItem = require('../models/GalleryItem');
+const { publicUploadPath } = require('../utils/uploadStorage');
 
 const buildPayload = (body = {}, file) => ({
   title: body.title?.trim(),
   category: body.category?.trim() || 'Workshop',
-  image: file ? `/${file.path.replace(/\\/g, '/')}` : body.image?.trim(),
+  image: file ? publicUploadPath('gallery', file.filename) : body.image?.trim(),
   description: body.description?.trim() || '',
   featured: body.featured === 'true' || body.featured === true,
   isActive: body.isActive === undefined ? true : body.isActive === 'true' || body.isActive === true,

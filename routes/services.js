@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { ensureUploadDir } = require('../utils/uploadStorage');
+const { compressUploadedImages } = require('../utils/imageCompression');
 const {
   getServiceById,
   getServiceBySlug,
@@ -21,13 +22,7 @@ const authMiddleware = require('../middleware/authMiddleware.js');
 
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-    const uploadDir = 'uploads/services/';
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    cb(null, uploadDir);
+    cb(null, ensureUploadDir('services'));
   },
   filename: function(req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -51,6 +46,13 @@ const upload = multer({
   fileFilter
 });
 
+const serviceImageUpload = upload.fields([
+  { name: 'heroImageFile', maxCount: 1 },
+  { name: 'imageFile', maxCount: 1 },
+  { name: 'heroImage', maxCount: 1 },
+  { name: 'image', maxCount: 1 }
+]);
+
 // Public routes (no authentication required)
 router.get('/popular', getPopularServices);
 router.get('/search', searchServices);
@@ -60,8 +62,8 @@ router.get('/slug/:slug', getServiceBySlug);
 router.get('/:id', getServiceById);  // Get single service by ID
 
 // Admin routes (authentication required)
-router.post('/', authMiddleware, createService);  // Create service
-router.put('/:id', authMiddleware, updateService);  // Update service
+router.post('/', authMiddleware, serviceImageUpload, compressUploadedImages(), createService);  // Create service
+router.put('/:id', authMiddleware, serviceImageUpload, compressUploadedImages(), updateService);  // Update service
 router.post(
   '/:id/media',
   authMiddleware,
@@ -72,6 +74,7 @@ router.post(
     { name: 'afterImages', maxCount: 20 },
     { name: 'videos', maxCount: 10 }
   ]),
+  compressUploadedImages(),
   uploadServiceMedia
 );
 router.delete('/:id/media', authMiddleware, deleteServiceMedia);

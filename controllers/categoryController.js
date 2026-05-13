@@ -1,8 +1,21 @@
 const Category = require('../models/Category');
 const Service = require('../models/Service');
 const { buildCategoryAutoFields } = require('../utils/catalogAuto');
+const { publicUploadPath } = require('../utils/uploadStorage');
 
-const normalizeCategoryPayload = (body) => {
+const getFirstUploadedFile = (req) => {
+  if (req.file) return req.file;
+
+  if (!req.files || typeof req.files !== 'object') {
+    return null;
+  }
+
+  return Object.values(req.files)
+    .flat()
+    .find(Boolean) || null;
+};
+
+const normalizeCategoryPayload = (body, file) => {
   const name = body.name || '';
   const autoFields = buildCategoryAutoFields(name);
 
@@ -12,7 +25,7 @@ const normalizeCategoryPayload = (body) => {
     description: body.description || '',
     emoji: body.emoji || body.icon || '📦',
     icon: body.icon || body.emoji || '📦',
-    image: body.image || '',
+    image: file ? publicUploadPath('categories', file.filename) : body.image || '',
     seoTitle: autoFields.seoTitle,
     seoDescription: autoFields.seoDescription,
     isActive: true,
@@ -173,7 +186,7 @@ exports.getCategoryBySlug = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
-    const payload = normalizeCategoryPayload(req.body);
+    const payload = normalizeCategoryPayload(req.body, getFirstUploadedFile(req));
 
     if (!payload.name) {
       return res.status(400).json({
@@ -212,7 +225,7 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   try {
-    const payload = normalizeCategoryPayload(req.body);
+    const payload = normalizeCategoryPayload(req.body, getFirstUploadedFile(req));
 
     const category = await Category.findByIdAndUpdate(req.params.id, payload, {
       new: true,

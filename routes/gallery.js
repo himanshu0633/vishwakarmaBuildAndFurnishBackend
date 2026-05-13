@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { ensureUploadDir } = require('../utils/uploadStorage');
+const { compressUploadedImages } = require('../utils/imageCompression');
 const authMiddleware = require('../middleware/authMiddleware');
 const {
   getGalleryItems,
@@ -13,13 +14,7 @@ const {
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    const uploadDir = 'uploads/gallery/';
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    cb(null, uploadDir);
+    cb(null, ensureUploadDir('gallery'));
   },
   filename(req, file, cb) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
@@ -42,8 +37,8 @@ const upload = multer({
 });
 
 router.get('/', getGalleryItems);
-router.post('/', authMiddleware, upload.single('imageFile'), createGalleryItem);
-router.put('/:id', authMiddleware, upload.single('imageFile'), updateGalleryItem);
+router.post('/', authMiddleware, upload.single('imageFile'), compressUploadedImages(), createGalleryItem);
+router.put('/:id', authMiddleware, upload.single('imageFile'), compressUploadedImages(), updateGalleryItem);
 router.delete('/:id', authMiddleware, deleteGalleryItem);
 
 module.exports = router;

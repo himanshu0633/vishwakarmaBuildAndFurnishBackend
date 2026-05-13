@@ -1,6 +1,6 @@
 const Tender = require('../models/Tender');
 const fs = require('fs');
-const path = require('path');
+const { getFileSystemPath, publicUploadPath } = require('../utils/uploadStorage');
 
 // Create a new tender with PDF upload
 exports.createTender = async (req, res) => {
@@ -31,7 +31,7 @@ exports.createTender = async (req, res) => {
       pdfData = {
         filename: req.file.filename,
         originalName: req.file.originalname,
-        path: req.file.path,
+        path: publicUploadPath('tenders', req.file.filename),
         size: req.file.size,
         mimetype: req.file.mimetype
       };
@@ -174,7 +174,7 @@ exports.updateTender = async (req, res) => {
     // Handle PDF update
     if (req.file) {
       if (tender.pdf && tender.pdf.path) {
-        fs.unlink(tender.pdf.path, (err) => {
+        fs.unlink(getFileSystemPath(tender.pdf.path), (err) => {
           if (err) console.error('Error deleting old PDF:', err);
         });
       }
@@ -182,7 +182,7 @@ exports.updateTender = async (req, res) => {
       req.body.pdf = {
         filename: req.file.filename,
         originalName: req.file.originalname,
-        path: req.file.path,
+        path: publicUploadPath('tenders', req.file.filename),
         size: req.file.size,
         mimetype: req.file.mimetype
       };
@@ -228,7 +228,7 @@ exports.deleteTender = async (req, res) => {
     }
     
     if (tender.pdf && tender.pdf.path) {
-      fs.unlink(tender.pdf.path, (err) => {
+      fs.unlink(getFileSystemPath(tender.pdf.path), (err) => {
         if (err) console.error('Error deleting PDF:', err);
       });
     }
@@ -299,7 +299,7 @@ exports.downloadPDF = async (req, res) => {
       });
     }
     
-    const filePath = tender.pdf.path;
+    const filePath = getFileSystemPath(tender.pdf.path);
     
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({

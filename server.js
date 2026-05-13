@@ -4,39 +4,21 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
-const path = require('path');
-const fs = require('fs');
 
 // Load environment variables
 dotenv.config();
+
+const { ensureUploadDir, uploadRoot } = require('./utils/uploadStorage');
 
 // Connect to database
 connectDB();
 
 const app = express();
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Create tenders subdirectory
-const tendersDir = path.join(uploadsDir, 'tenders');
-if (!fs.existsSync(tendersDir)) {
-  fs.mkdirSync(tendersDir, { recursive: true });
-}
-
-// Create services media subdirectory
-const servicesDir = path.join(uploadsDir, 'services');
-if (!fs.existsSync(servicesDir)) {
-  fs.mkdirSync(servicesDir, { recursive: true });
-}
-
-const galleryDir = path.join(uploadsDir, 'gallery');
-if (!fs.existsSync(galleryDir)) {
-  fs.mkdirSync(galleryDir, { recursive: true });
-}
+ensureUploadDir();
+ensureUploadDir('tenders');
+ensureUploadDir('services');
+ensureUploadDir('gallery');
 
 // Middleware
 app.use(helmet({
@@ -76,7 +58,7 @@ app.use(
     res.setHeader('Access-Control-Allow-Origin', '*');
     next();
   },
-  express.static(path.join(__dirname, 'uploads'))
+  express.static(uploadRoot)
 );
 
 // API Routes
@@ -96,7 +78,10 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running',
     uploads: {
       path: '/uploads',
-      tenders: '/uploads/tenders'
+      root: uploadRoot,
+      tenders: '/uploads/tenders',
+      services: '/uploads/services',
+      gallery: '/uploads/gallery'
     }
   });
 });
