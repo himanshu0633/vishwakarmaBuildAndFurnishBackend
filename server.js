@@ -19,6 +19,8 @@ ensureUploadDir();
 ensureUploadDir('tenders');
 ensureUploadDir('services');
 ensureUploadDir('gallery');
+ensureUploadDir('partners');
+ensureUploadDir('marketplace');
 
 // Middleware
 app.use(helmet({
@@ -69,6 +71,9 @@ app.use('/api/gallery', require('./routes/gallery')); // Gallery routes
 app.use('/api/inquiries', require('./routes/inquiries')); // Keep inquiries route
 app.use('/api/auth', require('./routes/auth')); // Auth routes
 app.use('/api/tenders', require('./routes/tenderRoutes')); // Tender routes with PDF upload
+app.use('/api/partners', require('./routes/partners'));
+app.use('/api/marketplace', require('./routes/marketplace'));
+app.use('/api/analytics', require('./routes/analytics'));
 app.use(require('./routes/seo'));
 
 // Health check endpoint

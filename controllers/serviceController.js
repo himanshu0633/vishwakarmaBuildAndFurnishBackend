@@ -146,6 +146,9 @@ exports.getServiceById = async (req, res) => {
       });
     }
 
+    service.views = (service.views || 0) + 1;
+    await Service.updateOne({ _id: service._id }, { $inc: { views: 1 } });
+
     res.json({
       success: true,
       data: service
@@ -179,6 +182,9 @@ exports.getServiceBySlug = async (req, res) => {
         message: 'Service not found'
       });
     }
+
+    service.views = (service.views || 0) + 1;
+    await Service.updateOne({ _id: service._id }, { $inc: { views: 1 } });
 
     res.json({
       success: true,
