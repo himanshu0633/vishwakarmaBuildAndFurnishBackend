@@ -1,7 +1,10 @@
 const Service = require('../models/Service');
 const Category = require('../models/Category');
 const { buildServiceAutoFields } = require('../utils/catalogAuto');
-const { publicUploadPath } = require('../utils/uploadStorage');
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
+const { ensureUploadDir, publicUploadPath } = require('../utils/uploadStorage');
 
 const featuredServicePriority = [
   'wooden doors',
@@ -52,6 +55,54 @@ const asArray = (value) => {
     .split(',')
     .map(item => item.trim())
     .filter(Boolean);
+};
+
+const getMediaTypeFromContent = (contentType = '', url = '') => {
+  const cleanContentType = contentType.toLowerCase();
+  const pathname = (() => {
+    try {
+      return new URL(url).pathname.toLowerCase();
+    } catch {
+      return String(url).toLowerCase();
+    }
+  })();
+
+  if (cleanContentType.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(pathname)) {
+    return 'image';
+  }
+
+  if (cleanContentType.startsWith('video/') || /\.(mp4|webm|ogg|mov|m4v)$/i.test(pathname)) {
+    return 'video';
+  }
+
+  return '';
+};
+
+const getMediaExtension = (contentType = '', url = '', mediaType = 'image') => {
+  const extensionFromUrl = (() => {
+    try {
+      return path.extname(new URL(url).pathname).toLowerCase();
+    } catch {
+      return path.extname(String(url).split('?')[0]).toLowerCase();
+    }
+  })();
+
+  if (extensionFromUrl && extensionFromUrl.length <= 6) return extensionFromUrl;
+
+  const cleanContentType = contentType.toLowerCase().split(';')[0];
+  const extensionMap = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'image/avif': '.avif',
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'video/ogg': '.ogg',
+    'video/quicktime': '.mov'
+  };
+
+  return extensionMap[cleanContentType] || (mediaType === 'video' ? '.mp4' : '.jpg');
 };
 
 const normalizeFaq = (value) => {
@@ -500,6 +551,120 @@ exports.uploadServiceMedia = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error uploading service media',
+      error: error.message
+    });
+  }
+};
+
+exports.uploadServiceMediaFromUrls = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      });
+    }
+
+    const urls = asArray(req.body.urls).slice(0, 10);
+
+    if (!urls.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Add at least one image or video URL'
+      });
+    }
+
+    const results = {
+      images: [],
+      videos: [],
+      failed: []
+    };
+
+    const uploadDir = ensureUploadDir('services');
+
+    for (const rawUrl of urls) {
+      try {
+        const url = new URL(rawUrl);
+
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          results.failed.push({ url: rawUrl, reason: 'Only http/https URLs are allowed' });
+          continue;
+        }
+
+        const response = await fetch(url.toString(), {
+          redirect: 'follow',
+          signal: AbortSignal.timeout(20000),
+          headers: {
+            'User-Agent': 'VishwakarmaBuildFurnish/1.0'
+          }
+        });
+
+        if (!response.ok) {
+          results.failed.push({ url: rawUrl, reason: `Download failed (${response.status})` });
+          continue;
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        const mediaType = getMediaTypeFromContent(contentType, rawUrl);
+
+        if (!mediaType) {
+          results.failed.push({ url: rawUrl, reason: 'URL is not a direct image or video file' });
+          continue;
+        }
+
+        const contentLength = Number(response.headers.get('content-length')) || 0;
+        const maxBytes = mediaType === 'video' ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+
+        if (contentLength > maxBytes) {
+          results.failed.push({ url: rawUrl, reason: mediaType === 'video' ? 'Video is larger than 50MB' : 'Image is larger than 15MB' });
+          continue;
+        }
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        if (buffer.length > maxBytes) {
+          results.failed.push({ url: rawUrl, reason: mediaType === 'video' ? 'Video is larger than 50MB' : 'Image is larger than 15MB' });
+          continue;
+        }
+
+        const extension = getMediaExtension(contentType, rawUrl, mediaType);
+        const filename = `service-url-${Date.now()}-${crypto.randomBytes(4).toString('hex')}${extension}`;
+        await fs.writeFile(path.join(uploadDir, filename), buffer);
+
+        const publicUrl = publicUploadPath('services', filename);
+
+        if (mediaType === 'video') {
+          results.videos.push(publicUrl);
+        } else {
+          results.images.push(publicUrl);
+        }
+      } catch (error) {
+        results.failed.push({ url: rawUrl, reason: error.name === 'TimeoutError' ? 'Download timed out' : error.message || 'Download failed' });
+      }
+    }
+
+    service.images = [...(service.images || []), ...results.images];
+    service.videos = [...(service.videos || []), ...results.videos];
+
+    if (!service.heroImage && service.images.length > 0) {
+      service.heroImage = service.images[0];
+    }
+
+    await service.save();
+
+    res.json({
+      success: true,
+      data: service,
+      results,
+      message: `${results.images.length + results.videos.length} media downloaded, ${results.failed.length} failed`
+    });
+  } catch (error) {
+    console.error('Error downloading service media:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error downloading service media',
       error: error.message
     });
   }

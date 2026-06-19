@@ -37,6 +37,20 @@ const blogSchema = new mongoose.Schema(
       trim: true,
       default: ''
     },
+    blogImage: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    blogImages: {
+      type: [String],
+      default: []
+    },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      default: null
+    },
     category: {
       type: String,
       trim: true,
@@ -62,6 +76,15 @@ const blogSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
+    faq: {
+      type: [
+        {
+          question: { type: String, trim: true, default: '' },
+          answer: { type: String, trim: true, default: '' }
+        }
+      ],
+      default: []
+    },
     featured: {
       type: Boolean,
       default: false
@@ -82,13 +105,13 @@ const blogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-blogSchema.pre('validate', function buildBlogAutoFields(next) {
+blogSchema.pre('validate', function buildBlogAutoFields() {
   if (!this.slug && this.title) {
     this.slug = slugify(this.title);
   }
 
   if (!this.seoTitle && this.title) {
-    this.seoTitle = `${this.title} | Vishwakarma Build & Furnish CKD`;
+    this.seoTitle = `${this.title} | Vishwakarma Build & Furnish`;
   }
 
   if (!this.seoDescription) {
@@ -106,7 +129,6 @@ blogSchema.pre('validate', function buildBlogAutoFields(next) {
     ];
   }
 
-  next();
 });
 
 blogSchema.index({ isActive: 1, featured: 1, order: 1 });

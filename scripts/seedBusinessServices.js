@@ -113,7 +113,7 @@ const buildShortDescription = (name, categoryName) =>
   `Premium ${name.toLowerCase()} service for ${categoryName.toLowerCase()} in Charkhi Dadri.`;
 
 const buildFullDescription = (name, categoryName) =>
-  `Get professional ${name.toLowerCase()} service by Vishwakarma Build & Furnish CKD. We provide expert planning, quality materials, skilled workmanship, and modern finishing for ${categoryName.toLowerCase()} projects in Charkhi Dadri and nearby Haryana areas.`;
+  `Get professional ${name.toLowerCase()} service by Vishwakarma Build & Furnish. We provide expert planning, quality materials, skilled workmanship, and modern finishing for ${categoryName.toLowerCase()} projects in Charkhi Dadri and nearby Haryana areas.`;
 
 const priorityServices = [
   'Wooden Doors',

@@ -15,6 +15,7 @@ const {
   updateService,
   deleteService,
   uploadServiceMedia,
+  uploadServiceMediaFromUrls,
   deleteServiceMedia,
   getAllServices  // Now this exists!
 } = require('../controllers/serviceController');
@@ -77,6 +78,7 @@ router.post(
   compressUploadedImages(),
   uploadServiceMedia
 );
+router.post('/:id/media-url', authMiddleware, uploadServiceMediaFromUrls);
 router.delete('/:id/media', authMiddleware, deleteServiceMedia);
 router.delete('/:id', authMiddleware, deleteService);  // Delete service
 

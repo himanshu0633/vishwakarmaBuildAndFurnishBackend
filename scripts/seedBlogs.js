@@ -1,152 +1,195 @@
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
+require('../models/Category');
 const Service = require('../models/Service');
-const { getServiceAliases } = require('../utils/searchAliases');
+const slugify = require('../utils/slugify');
 
 dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/industrial-equipment-solutions';
 
-const blogSeeds = [
-  {
-    serviceSlug: 'wooden-doors-charkhi-dadri',
-    title: 'Premium Wooden Doors in Charkhi Dadri',
-    excerpt: 'Strong, stylish, and custom wooden doors for modern homes and commercial spaces.',
-    tags: ['wooden doors', 'doors', 'furniture', 'charkhi dadri'],
-    order: 1
-  },
-  {
-    serviceSlug: 'wooden-windows-charkhi-dadri',
-    title: 'Custom Wooden Windows for Luxury Homes',
-    excerpt: 'Elegant wooden window designs with premium finishing and durable material selection.',
-    tags: ['wooden windows', 'windows', 'woodwork', 'charkhi dadri'],
-    order: 2
-  },
-  {
-    serviceSlug: 'ply-board-door-charkhi-dadri',
-    title: 'Ply Board Door Designs for Modern Interiors',
-    excerpt: 'Affordable and durable ply board doors with clean finishing for every room.',
-    tags: ['ply board door', 'door design', 'furniture', 'interior'],
-    order: 3
-  },
-  {
-    serviceSlug: 'wooden-jali-single-double-doors-charkhi-dadri',
-    title: 'Wooden Jali Single and Double Door Designs',
-    excerpt: 'Decorative wooden jali door work for entrances, pooja rooms, and interior partitions.',
-    tags: ['wooden jali door', 'single door', 'double door', 'woodwork'],
-    order: 4
-  },
-  {
-    serviceSlug: 'double-bed-charkhi-dadri',
-    title: 'Custom Double Bed Manufacturing in Charkhi Dadri',
-    excerpt: 'Premium double beds made with strong structure, modern design, and custom storage options.',
-    tags: ['double bed', 'bed', 'furniture', 'hydraulic bed'],
-    order: 5
-  },
-  {
-    serviceSlug: 'modular-kitchen-charkhi-dadri',
-    title: 'Modular Kitchen Solutions in Charkhi Dadri',
-    excerpt: 'Modern modular kitchen planning, cabinets, storage, and premium finishing for daily comfort.',
-    tags: ['modular kitchen', 'kitchen', 'furniture', 'interior'],
-    order: 6
+const unique = (items = []) => {
+  const seen = new Set();
+
+  return items
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+};
+
+const lower = (value = '') => String(value || '').toLowerCase().trim();
+
+const getServiceImages = (service) =>
+  unique([
+    service.heroImage,
+    ...(service.images || []),
+    ...(service.beforeImages || []),
+    ...(service.afterImages || [])
+  ]).slice(0, 9);
+
+const getBlogTitle = (service) => {
+  const rawName = service.name || 'Service';
+  const name = rawName
+    .replace(/\bcustomized\b/gi, 'Custom')
+    .replace(/\bcustom\b/gi, 'Custom')
+    .replace(/\bdesigns?\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const normalizedName = lower(name);
+
+  if (normalizedName.includes('bed')) {
+    return `Custom ${name} Manufacturing in Charkhi Dadri`;
   }
-];
 
-const slugify = (value = '') =>
-  value
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  if (normalizedName.includes('kitchen') || normalizedName.includes('wardrobe') || normalizedName.includes('tv')) {
+    return `Latest ${name} Designs in Charkhi Dadri`;
+  }
 
-const unique = (items = []) => [...new Set(items.map((item) => item?.toString().trim()).filter(Boolean))];
+  if (normalizedName.includes('construction') || normalizedName.includes('paint') || normalizedName.includes('electrical') || normalizedName.includes('plumbing')) {
+    return `Professional ${name} Services in Charkhi Dadri`;
+  }
 
-const buildContent = (title, serviceName) => `
-${title}
+  return normalizedName.startsWith('custom ')
+    ? `${name} Designs in Charkhi Dadri`
+    : `Custom ${name} Designs in Charkhi Dadri`;
+};
 
-Vishwakarma Build & Furnish CKD provides professional ${serviceName.toLowerCase()} service in Charkhi Dadri and nearby Haryana areas. If you are checking ${serviceName.toLowerCase()} images, latest ${serviceName.toLowerCase()} designs, material options, finishing quality, or the best ${serviceName.toLowerCase()} maker near you, this guide will help you compare the right choices.
+const getExcerpt = (service, categoryName) =>
+  `Explore ${service.name} images, design ideas, material options, finishing quality, and custom ${lower(categoryName || 'service')} work in Charkhi Dadri, Haryana.`;
 
-Our team focuses on premium material selection, strong workmanship, clean finishing, and practical designs that look beautiful and remain useful for daily life. Whether you need work for a new home, renovation, shop, office, or rental property, we customize every detail according to your requirement.
+const getContent = (service, categoryName) => {
+  const serviceName = service.name || 'this service';
+  const category = categoryName || 'home improvement';
 
-For image search and design comparison, always check the wood or board quality, polish or laminate finish, edge finishing, hardware, measurements, and long-term maintenance. A design may look good online, but the final result becomes better when it is made according to your wall size, room use, sunlight, moisture, and daily handling.
+  return [
+    `${serviceName} in Charkhi Dadri`,
+    `Vishwakarma Build & Furnish provides customized ${lower(serviceName)} work for homes, shops, offices, and renovation projects in Charkhi Dadri and nearby Haryana areas.`,
+    `Every project is planned according to the client's space, required quality, design preference, material selection, and budget. Our focus is clean finishing, practical use, reliable workmanship, and long-term durability.`,
+    `Before finalizing any ${lower(serviceName)} design, it is important to compare size, material grade, finish, hardware, maintenance needs, and the way the space will be used every day.`,
+    `Pricing depends on measurements, material quality, design complexity, finishing, and total project quantity. For accurate guidance, share your requirement with Vishwakarma Build & Furnish and get a custom quote for ${lower(category)} work.`
+  ].join('\n\n');
+};
 
-Pricing depends on your required quality, design, size, material, and total project quantity. For the best deal and proper guidance, contact Vishwakarma Build & Furnish CKD for a free consultation.
-`.trim();
+const getTags = (service, categoryName) =>
+  unique([
+    service.name,
+    `${service.name} images`,
+    `${service.name} design`,
+    `latest ${lower(service.name)} design`,
+    `best ${lower(service.name)} in Charkhi Dadri`,
+    `${service.name} price in Charkhi Dadri`,
+    categoryName,
+    `${categoryName} services`,
+    'custom furniture Charkhi Dadri',
+    'interior design Haryana',
+    'construction services Haryana',
+    'Vishwakarma Build and Furnish',
+    'Charkhi Dadri',
+    'Haryana',
+    ...(service.tags || [])
+  ]).slice(0, 24);
 
-const buildGenericBlogSeed = (service, index) => ({
-  serviceSlug: service.slug,
-  title: `Latest ${service.name} Designs in Charkhi Dadri`,
-  excerpt: `Check ${service.name.toLowerCase()} images, latest designs, material options, finishing quality, and custom work in Charkhi Dadri, Haryana.`,
-  tags: [
-    service.name.toLowerCase(),
-    `${service.name.toLowerCase()} images`,
-    `latest ${service.name.toLowerCase()} design`,
-    `best ${service.name.toLowerCase()} in charkhi dadri`,
-    'furniture',
-    'haryana'
-  ],
-  order: 20 + index
-});
+const getFaq = (service, categoryName) => {
+  const serviceName = service.name || 'this service';
+  const category = categoryName || 'this category';
+  const serviceKeyword = lower(serviceName);
+  const categoryKeyword = lower(category);
+
+  return [
+    {
+      question: `Where can I get the best ${serviceName} service in Charkhi Dadri?`,
+      answer: `Vishwakarma Build & Furnish provides custom ${serviceKeyword} service in Charkhi Dadri and nearby Haryana areas with design planning, material guidance, quality workmanship, and site-based execution.`
+    },
+    {
+      question: `What is the price of ${serviceName} in Charkhi Dadri?`,
+      answer: `The price of ${serviceKeyword} depends on measurements, material quality, finish, hardware, design complexity, and total project quantity. A custom quote is provided after understanding your exact requirement.`
+    },
+    {
+      question: `Can I see ${serviceName} images and latest design options before finalizing?`,
+      answer: `Yes, you can review ${serviceKeyword} images, design references, material samples, and finishing options before finalizing the work. You can also share your own reference image or video.`
+    },
+    {
+      question: `Which materials are suitable for ${serviceName}?`,
+      answer: `Material selection for ${serviceKeyword} depends on usage, budget, durability, moisture exposure, and desired finish. Our team suggests practical options for long-term performance and premium appearance.`
+    },
+    {
+      question: `How long does ${serviceName} work usually take?`,
+      answer: `Timeline depends on design detail, site readiness, measurements, material availability, and project size. After inspection or requirement discussion, we provide a realistic completion timeline.`
+    },
+    {
+      question: `Do you provide customized ${category} work in Charkhi Dadri and nearby areas?`,
+      answer: `Yes, we provide customized ${categoryKeyword} work in Charkhi Dadri and nearby Haryana locations for homes, offices, shops, renovation projects, and new construction requirements.`
+    }
+  ];
+};
+
+const getUniqueSlug = (title, service, usedSlugs) => {
+  const baseSlug = slugify(title);
+
+  if (!usedSlugs.has(baseSlug)) {
+    usedSlugs.add(baseSlug);
+    return baseSlug;
+  }
+
+  const fallbackSlug = slugify(`${title} ${service.slug || service._id}`);
+  usedSlugs.add(fallbackSlug);
+  return fallbackSlug;
+};
 
 const seedBlogs = async () => {
   await mongoose.connect(MONGODB_URI);
 
-  let created = 0;
-  let updated = 0;
+  const services = await Service.find({ isActive: true })
+    .populate('categoryId', 'name slug')
+    .sort({ order: 1, name: 1 })
+    .lean();
 
-  const activeServices = await Service.find({ isActive: true }).select('_id slug name heroImage images tags');
-  const allBlogSeeds = [
-    ...blogSeeds,
-    ...activeServices
-      .filter((service) => !blogSeeds.some((seed) => seed.serviceSlug === service.slug))
-      .map(buildGenericBlogSeed)
-  ];
+  const deleted = await Blog.deleteMany({});
+  const usedSlugs = new Set();
 
-  for (const blogSeed of allBlogSeeds) {
-    const service = await Service.findOne({ slug: blogSeed.serviceSlug });
-    const aliases = getServiceAliases(service?.name || blogSeed.title);
+  const blogs = services.map((service, index) => {
+    const categoryName = service.categoryId?.name || 'Furniture';
+    const title = getBlogTitle(service);
+    const blogImages = getServiceImages(service);
+    const slug = getUniqueSlug(title, service, usedSlugs);
+    const excerpt = getExcerpt(service, categoryName);
 
-    const payload = {
-      title: blogSeed.title,
-      slug: slugify(blogSeed.title),
-      excerpt: blogSeed.excerpt,
-      content: buildContent(blogSeed.title, service?.name || blogSeed.title),
-      coverImage: service?.heroImage || service?.images?.[0] || '',
-      category: 'Furniture',
-      relatedServices: service?._id ? [service._id] : [],
-      seoTitle: `${blogSeed.title} | Best ${service?.name || 'Furniture'} in Charkhi Dadri`,
-      seoDescription: blogSeed.excerpt,
-      tags: unique([
-        ...blogSeed.tags,
-        ...(service?.tags || []),
-        ...aliases,
-        'vishwakarma build furnish',
-        'charkhi dadri',
-        'haryana'
-      ]),
-      featured: true,
+    return {
+      title,
+      slug,
+      excerpt,
+      content: getContent(service, categoryName),
+      coverImage: blogImages[0] || service.heroImage || '',
+      blogImage: blogImages[0] || '',
+      blogImages,
+      categoryId: service.categoryId?._id || null,
+      category: categoryName,
+      relatedServices: [service._id],
+      seoTitle: `${title} | Vishwakarma Build & Furnish`,
+      seoDescription: excerpt.slice(0, 155),
+      tags: getTags(service, categoryName),
+      faq: getFaq(service, categoryName),
+      featured: index < 12,
       isActive: true,
-      order: blogSeed.order,
+      order: index + 1,
       publishedAt: new Date()
     };
+  });
 
-    const result = await Blog.updateOne(
-      { $or: [{ title: blogSeed.title }, { slug: payload.slug }] },
-      { $set: payload },
-      { upsert: true }
-    );
-
-    if (result.upsertedCount) {
-      created += 1;
-    } else {
-      updated += 1;
-    }
+  if (blogs.length) {
+    await Blog.insertMany(blogs);
   }
 
-  console.log(`Blogs seeded. Created: ${created}, Updated: ${updated}`);
+  console.log(`Deleted old blogs: ${deleted.deletedCount}`);
+  console.log(`Created new service blogs: ${blogs.length}`);
+  console.log(`Blogs without selected images: ${blogs.filter((blog) => !blog.blogImages.length).length}`);
+
   await mongoose.disconnect();
 };
 

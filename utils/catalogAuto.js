@@ -1,7 +1,7 @@
 const slugify = require('./slugify');
 const { getServiceAliases } = require('./searchAliases');
 
-const BUSINESS_NAME = 'Vishwakarma Build & Furnish CKD';
+const BUSINESS_NAME = 'Vishwakarma Build & Furnish';
 const CITY = 'Charkhi Dadri';
 
 const titleCase = (value = '') =>
