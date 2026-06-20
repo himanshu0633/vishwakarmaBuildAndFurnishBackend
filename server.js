@@ -21,6 +21,7 @@ ensureUploadDir('services');
 ensureUploadDir('gallery');
 ensureUploadDir('partners');
 ensureUploadDir('marketplace');
+ensureUploadDir('about');
 
 // Middleware
 app.use(helmet({
@@ -32,9 +33,12 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
+  'https://vishwakarmabuildandfurnish.in',
+  'https://www.vishwakarmabuildandfurnish.in',
   'https://vishwakarma-build-and-furnish.vercel.app',
   'https://vishwakarma-build-and-furnish.vercel.app/',
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_WWW
 ].filter(Boolean);
 
 app.use(cors({
@@ -68,6 +72,7 @@ app.use('/api/categories', require('./routes/categories')); // Keep categories r
 app.use('/api/services', require('./routes/services')); // Keep services route
 app.use('/api/blogs', require('./routes/blogs')); // Blog routes
 app.use('/api/gallery', require('./routes/gallery')); // Gallery routes
+app.use('/api/about-content', require('./routes/aboutContent'));
 app.use('/api/inquiries', require('./routes/inquiries')); // Keep inquiries route
 app.use('/api/auth', require('./routes/auth')); // Auth routes
 app.use('/api/tenders', require('./routes/tenderRoutes')); // Tender routes with PDF upload

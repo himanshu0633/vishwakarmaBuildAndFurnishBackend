@@ -85,6 +85,28 @@ const blogSchema = new mongoose.Schema(
       ],
       default: []
     },
+    priceRange: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    benefits: {
+      type: [String],
+      default: []
+    },
+    process: {
+      type: [
+        {
+          title: { type: String, trim: true, default: '' },
+          description: { type: String, trim: true, default: '' }
+        }
+      ],
+      default: []
+    },
+    localAreas: {
+      type: [String],
+      default: []
+    },
     featured: {
       type: Boolean,
       default: false

@@ -52,11 +52,52 @@ const normalizeFaq = (value) => {
   return [];
 };
 
+const normalizeProcess = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => ({
+        title: String(item?.title || '').trim(),
+        description: String(item?.description || item?.desc || '').trim()
+      }))
+      .filter((item) => item.title || item.description);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split('\n')
+      .map((line) => {
+        const [title, ...descriptionParts] = line.split('|');
+        return {
+          title: String(title || '').trim(),
+          description: descriptionParts.join('|').trim()
+        };
+      })
+      .filter((item) => item.title || item.description);
+  }
+
+  return [];
+};
+
 const normalizeBlogImages = (value, fallback = '') => {
   const images = normalizeList(value).slice(0, 9);
   if (!images.length && fallback) return [fallback].slice(0, 9);
   return images;
 };
+
+const defaultLocalAreas = [
+  'Charkhi Dadri',
+  'Bhiwani',
+  'Mahendragarh',
+  'Rewari',
+  'Rohtak',
+  'Jhajjar',
+  'Dadri nearby villages',
+  'Bhiwani nearby villages',
+  'Mahendragarh nearby villages',
+  'Rewari nearby villages',
+  'Rohtak nearby villages',
+  'Jhajjar nearby villages'
+];
 
 const uniqueList = (items = []) => {
   const seen = new Set();
@@ -130,6 +171,41 @@ const buildAutoFaq = ({ title, categoryName, services = [] }) => {
   ];
 };
 
+const buildAutoBenefits = ({ title, services = [] }) => {
+  const serviceName = services[0]?.name || title || 'custom furniture and construction work';
+
+  return [
+    `Customized ${serviceName} planning according to site size, budget, and design preference`,
+    'Transparent material guidance before final quotation',
+    'Skilled workmanship for durable fitting and premium finishing',
+    'Local service support across Charkhi Dadri and nearby Haryana districts',
+    'Suitable solutions for homes, shops, offices, renovation, and new construction'
+  ];
+};
+
+const buildAutoProcess = () => [
+  {
+    title: 'Requirement Discussion',
+    description: 'We understand your design, measurements, budget, material preference, and timeline.'
+  },
+  {
+    title: 'Site Visit & Measurement',
+    description: 'Our team checks the site and confirms practical execution details before quotation.'
+  },
+  {
+    title: 'Design & Quotation',
+    description: 'You receive design suggestions, material options, price range, and a clear work plan.'
+  },
+  {
+    title: 'Manufacturing & Execution',
+    description: 'Furniture, interior, or construction work is handled with skilled workers and quality checks.'
+  },
+  {
+    title: 'Final Finishing',
+    description: 'We complete fitting, finishing, cleaning, and handover after customer review.'
+  }
+];
+
 const normalizeBlogPayload = async (body = {}) => {
   const title = body.title?.trim();
   const excerpt = body.excerpt?.trim() || '';
@@ -144,6 +220,9 @@ const normalizeBlogPayload = async (body = {}) => {
   const categoryName = categoryDoc?.name || body.category?.trim() || serviceDocs[0]?.categoryId?.name || 'Furniture';
   const manualTags = normalizeList(body.tags);
   const manualFaq = normalizeFaq(body.faq);
+  const manualBenefits = normalizeList(body.benefits);
+  const manualProcess = normalizeProcess(body.process);
+  const manualLocalAreas = normalizeList(body.localAreas);
   const blogImages = normalizeBlogImages(body.blogImages, body.blogImage?.trim() || '');
   const slug = body.slug?.trim() ? slugify(body.slug) : title ? slugify(title) : undefined;
   const seoTitle =
@@ -169,6 +248,10 @@ const normalizeBlogPayload = async (body = {}) => {
     seoDescription,
     tags: manualTags.length ? manualTags : buildAutoTags({ title, categoryName, services: serviceDocs }),
     faq: manualFaq.length ? manualFaq : buildAutoFaq({ title, categoryName, services: serviceDocs }),
+    priceRange: body.priceRange?.trim() || serviceDocs[0]?.priceStarting || 'Custom quote after site measurement',
+    benefits: manualBenefits.length ? manualBenefits : buildAutoBenefits({ title, services: serviceDocs }),
+    process: manualProcess.length ? manualProcess : buildAutoProcess(),
+    localAreas: manualLocalAreas.length ? manualLocalAreas : defaultLocalAreas,
     featured: Boolean(body.featured),
     isActive: body.isActive === undefined ? true : Boolean(body.isActive),
     order: Number(body.order) || 0,

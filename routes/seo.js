@@ -6,7 +6,7 @@ const Category = require('../models/Category');
 const router = express.Router();
 
 const siteUrl = () =>
-  (process.env.SITE_URL || process.env.FRONTEND_URL || 'https://vishwakarma-build-and-furnish.vercel.app')
+  (process.env.SITE_URL || process.env.FRONTEND_URL || 'https://vishwakarmabuildandfurnish.in')
     .replace(/\/+$/, '');
 
 const escapeXml = (value = '') =>
@@ -17,7 +17,7 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const sitemapUrl = ({ loc, lastmod, changefreq = 'weekly', priority = '0.7', images = [], assetOrigin = '' }) => {
+const sitemapUrl = ({ loc, lastmod, changefreq = 'weekly', priority = '0.7', images = [], assetOrigin = '', title = '' }) => {
   const imageXml = images
     .filter(Boolean)
     .map((image) => {
@@ -28,6 +28,8 @@ const sitemapUrl = ({ loc, lastmod, changefreq = 'weekly', priority = '0.7', ima
       return `
     <image:image>
       <image:loc>${escapeXml(imageUrl)}</image:loc>
+      ${title ? `<image:title>${escapeXml(title)}</image:title>` : ''}
+      ${title ? `<image:caption>${escapeXml(`${title} images and design in Charkhi Dadri Haryana`)}</image:caption>` : ''}
     </image:image>`;
     })
     .join('');
@@ -47,6 +49,9 @@ router.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
+    'Disallow: /admin/',
+    'Disallow: /loginuser',
+    'Disallow: /admin/loginhide',
     `Sitemap: ${origin}/sitemap.xml`
   ].join('\n'));
 });
@@ -56,9 +61,9 @@ router.get('/sitemap.xml', async (req, res, next) => {
     const origin = siteUrl();
     const assetOrigin = (process.env.BACKEND_URL || process.env.API_ORIGIN || origin).replace(/\/+$/, '');
     const [categories, services, blogs] = await Promise.all([
-      Category.find({ isActive: true }).select('slug updatedAt'),
-      Service.find({ isActive: true }).select('slug categoryId heroImage images updatedAt').populate('categoryId', 'slug'),
-      Blog.find({ isActive: true }).select('slug coverImage updatedAt publishedAt')
+      Category.find({ isActive: true }).select('slug name updatedAt'),
+      Service.find({ isActive: true }).select('name slug categoryId heroImage images beforeImages afterImages updatedAt').populate('categoryId', 'slug'),
+      Blog.find({ isActive: true }).select('title slug coverImage blogImage blogImages updatedAt publishedAt')
     ]);
 
     const staticPages = ['/', '/services', '/blogs', '/gallery', '/about', '/contact'].map((path) =>
@@ -73,7 +78,8 @@ router.get('/sitemap.xml', async (req, res, next) => {
       sitemapUrl({
         loc: `${origin}/services/${category.slug}`,
         lastmod: category.updatedAt?.toISOString(),
-        priority: '0.8'
+        priority: '0.8',
+        title: category.name
       })
     );
 
@@ -82,8 +88,9 @@ router.get('/sitemap.xml', async (req, res, next) => {
         loc: `${origin}/services/${service.categoryId?.slug || 'furniture'}/${service.slug}`,
         lastmod: service.updatedAt?.toISOString(),
         priority: '0.9',
-        images: [service.heroImage, ...(service.images || [])].slice(0, 10),
-        assetOrigin
+        images: [service.heroImage, ...(service.images || []), ...(service.beforeImages || []), ...(service.afterImages || [])].slice(0, 20),
+        assetOrigin,
+        title: service.name
       })
     );
 
@@ -92,8 +99,9 @@ router.get('/sitemap.xml', async (req, res, next) => {
         loc: `${origin}/blogs/${blog.slug}`,
         lastmod: (blog.updatedAt || blog.publishedAt)?.toISOString(),
         priority: '0.85',
-        images: [blog.coverImage],
-        assetOrigin
+        images: [blog.coverImage, blog.blogImage, ...(blog.blogImages || [])].slice(0, 12),
+        assetOrigin,
+        title: blog.title
       })
     );
 
