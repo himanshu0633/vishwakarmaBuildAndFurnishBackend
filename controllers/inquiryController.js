@@ -1,6 +1,7 @@
 const Inquiry = require('../models/Inquiry');
 const Service = require('../models/Service');
 const Category = require('../models/Category');
+const { sendInquiryEmail } = require('../utils/sendEmail');
 
 // Create new inquiry
 exports.createInquiry = async (req, res) => {
@@ -40,6 +41,8 @@ exports.createInquiry = async (req, res) => {
         ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
       });
+
+      sendInquiryEmail(inquiry);
 
       return res.status(201).json({
         success: true,
@@ -83,6 +86,8 @@ exports.createInquiry = async (req, res) => {
         userAgent: req.headers['user-agent']
       });
 
+      sendInquiryEmail(inquiry);
+
       return res.status(201).json({
         success: true,
         message: 'Tender inquiry submitted successfully',
@@ -111,6 +116,8 @@ exports.createInquiry = async (req, res) => {
         ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
       });
+
+      sendInquiryEmail(inquiry);
 
       return res.status(201).json({
         success: true,

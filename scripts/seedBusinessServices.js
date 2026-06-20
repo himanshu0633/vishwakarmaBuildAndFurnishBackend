@@ -109,11 +109,70 @@ const emojiForService = (name) => {
   return '🔧';
 };
 
-const buildShortDescription = (name, categoryName) =>
-  `Premium ${name.toLowerCase()} service for ${categoryName.toLowerCase()} in Charkhi Dadri.`;
+const customDescriptions = {
+  'Wooden Doors': {
+    short: 'Premium quality teak and hardwood doors customized for your home. Available in modern designs with a termite-resistant neat finish.',
+    full: 'Get high-quality customized teak and hardwood wooden doors from Vishwakarma Build & Furnish. Our doors are crafted using seasoned wood, termite-resistant treatment, and premium polishing to ensure long-lasting durability and a majestic look for your home.'
+  },
+  'Wooden Windows': {
+    short: 'High durability wooden windows designed for optimal ventilation, natural light, and elegant aesthetics.',
+    full: 'Premium wooden window frame manufacturing and shutter installation. Using seasoned wood and durable hardware accessories to withstand all seasons.'
+  },
+  'Ply Board Door': {
+    short: 'Durable flush doors and ply board doors with premium laminate finishing options.',
+    full: 'Custom ply board and flush door installation services. Finished with premium laminates or veneers, providing moisture resistance and high load bearing strength.'
+  },
+  'Wooden Jali single-double Doors': {
+    short: 'Beautiful wooden jali doors designed for ventilation and home security with mesh setups.',
+    full: 'Custom teak wood jali doors for main entrance and interior setups. Designed with high-density wire mesh for premium safety, ventilation, and traditional elegance.'
+  },
+  'PVC Panels': {
+    short: 'Durable and waterproof PVC wall and ceiling panels, perfect for moisture resistance and modern interior walls.',
+    full: 'Durable, moisture-proof, and modern PVC panel installations for walls and ceilings. Ideal for damp walls and quick, elegant renovations.'
+  },
+  'Double Bed': {
+    short: 'Custom manufactured double beds with optional hydraulic storage and premium headboards.',
+    full: 'Sturdy and beautiful designer double beds customized to your size. Choose from premium upholstery, storage options, and long-lasting hardwood structural frames.'
+  },
+  'Modular Kitchen': {
+    short: 'Maximize your kitchen space with our modern modular kitchen layouts, smart chimneys, and durable soft-close cabinets.',
+    full: 'Transform your cooking space with luxury modular kitchens from Vishwakarma Build & Furnish. We offer custom L-shaped, U-shaped, and parallel layouts using marine grade waterproof plywood, high-quality acrylic finishes, modern pull-out drawers, and premium soft-close hinges.'
+  },
+  'House Construction': {
+    short: 'End-to-end premium house construction contractor services with total transparency.',
+    full: 'Get complete peace of mind with our house construction services. We handle everything from foundation work, structural RCC casting, brickwork, plastering, to final finishing, plumbing, and electrical works.'
+  },
+  'False Ceiling': {
+    short: 'Elegant POP and PVC false ceiling designs with integrated LED lighting setup to elevate your living room look.',
+    full: 'Elevate your interior design with custom POP and PVC false ceilings by Vishwakarma Build & Furnish. We specialize in contemporary designs with integrated LED strip lighting, profile lights, and clean finishing that adds modern luxury to your living rooms and bedrooms.'
+  },
+  'Luxury Interior Design': {
+    short: 'Full-service luxury home interior planning and execution by expert designers.',
+    full: 'Turn your house into a dream home with our complete interior design services. We provide custom space planning, 3D design visualizations, false ceilings, lighting layouts, and bespoke furniture coordination.'
+  },
+  'Sofa Set': {
+    short: 'Luxury sofa sets customized in premium fabrics, high-density foam, and designer looks.',
+    full: 'Elegant custom-built sofas and couches for your living room. We use premium high-density foam for long-lasting comfort and high-quality upholstery fabrics.'
+  },
+  'Wardrobe': {
+    short: 'Smart spacious wardrobe solutions with custom shelving and premium sliding doors.',
+    full: 'Maximize your bedroom storage with custom wardrobes. Featuring modern sliding doors, built-in organizers, drawer locks, and premium laminate or acrylic finishes.'
+  }
+};
 
-const buildFullDescription = (name, categoryName) =>
-  `Get professional ${name.toLowerCase()} service by Vishwakarma Build & Furnish. We provide expert planning, quality materials, skilled workmanship, and modern finishing for ${categoryName.toLowerCase()} projects in Charkhi Dadri and nearby Haryana areas.`;
+const buildShortDescription = (name, categoryName) => {
+  if (customDescriptions[name]) {
+    return customDescriptions[name].short;
+  }
+  return `Premium ${name.toLowerCase()} service for ${categoryName.toLowerCase()} in Charkhi Dadri.`;
+};
+
+const buildFullDescription = (name, categoryName) => {
+  if (customDescriptions[name]) {
+    return customDescriptions[name].full;
+  }
+  return `Get professional ${name.toLowerCase()} service by Vishwakarma Build & Furnish. We provide expert planning, quality materials, skilled workmanship, and modern finishing for ${categoryName.toLowerCase()} projects in Charkhi Dadri and nearby Haryana areas.`;
+};
 
 const priorityServices = [
   'Wooden Doors',
