@@ -22,6 +22,7 @@ ensureUploadDir('gallery');
 ensureUploadDir('partners');
 ensureUploadDir('marketplace');
 ensureUploadDir('about');
+ensureUploadDir('popups');
 
 // Middleware
 app.use(helmet({
@@ -79,6 +80,7 @@ app.use('/api/tenders', require('./routes/tenderRoutes')); // Tender routes with
 app.use('/api/partners', require('./routes/partners'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/popups', require('./routes/popups'));
 app.use(require('./routes/seo'));
 
 // Health check endpoint
@@ -91,7 +93,8 @@ app.get('/api/health', (req, res) => {
       root: uploadRoot,
       tenders: '/uploads/tenders',
       services: '/uploads/services',
-      gallery: '/uploads/gallery'
+      gallery: '/uploads/gallery',
+      popups: '/uploads/popups'
     }
   });
 });

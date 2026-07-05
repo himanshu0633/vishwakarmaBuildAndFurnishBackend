@@ -8,9 +8,65 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/industrial-equipment-solutions';
 
+const serviceMediaPools = {
+  'wooden-work-services': [
+    '/uploads/services/service-1778313028408-572604629.png',
+    '/uploads/services/service-1778318103597-311567816.jpg',
+    '/uploads/services/service-1778318503449-38707768.png',
+    '/uploads/services/service-1778318612940-539670443.png',
+    '/uploads/services/service-1778318707521-159354051.png',
+    '/uploads/services/service-1778319238096-389847607.png',
+    '/uploads/services/service-1778320076164-69983167.png',
+    '/uploads/services/service-1778320539413-147282760.png',
+    '/uploads/services/service-1778320666165-164821877.png',
+    '/uploads/services/service-1778320766227-819047316.png',
+    '/uploads/services/service-1778320859571-721423300.png',
+    '/uploads/services/service-1778320967895-144352592.png',
+    '/uploads/services/service-1778321073566-960284640.png',
+    '/uploads/services/service-1778321155334-613312876.png',
+    '/uploads/services/service-1778321247668-982289621.png',
+    '/uploads/services/service-1778321506645-669402337.png',
+    '/uploads/services/service-1778321816205-468892235.png',
+    '/uploads/services/service-1778322020762-994268796.png',
+    '/uploads/services/service-1778322898784-742772367.png',
+    '/uploads/services/service-1778323023528-938560568.png',
+    '/uploads/services/service-1778323142548-890185675.png',
+    '/uploads/services/service-1778323203006-727897366.png',
+    '/uploads/services/service-1778323250507-968943790.png',
+    '/uploads/services/service-1778323479010-22406135.png'
+  ],
+  'construction-services': [
+    '/uploads/services/service-1778323595757-336505731.png',
+    '/uploads/services/service-1778324296375-357124452.png',
+    '/uploads/services/service-1778324475033-404757669.png',
+    '/uploads/services/service-1778324688633-273387250.png',
+    '/uploads/services/service-1778331078211-803668436.png',
+    '/uploads/services/service-1778334916286-751475471.jpg',
+    '/uploads/services/service-1778334916287-448620259.jpg',
+    '/uploads/services/service-1778334916289-681122555.jpg',
+    '/uploads/services/service-1778334916290-11240705.jpg',
+    '/uploads/services/service-1778334916293-808452414.jpg',
+    '/uploads/services/service-1778334916294-112933330.jpg',
+    '/uploads/services/service-1778334916294-741416269.jpg'
+  ],
+  'interior-services': [
+    '/uploads/services/service-1778334916296-533906718.jpg',
+    '/uploads/services/service-1778334916297-417836069.jpg',
+    '/uploads/services/service-1778334916297-451792676.jpg',
+    '/uploads/services/service-1778334916297-748650356.jpg',
+    '/uploads/services/service-1778334916298-193264245.jpg',
+    '/uploads/services/service-1778334916298-646515120.jpg',
+    '/uploads/services/service-1778581763987-169674416.png',
+    '/uploads/services/service-1778582162920-185677714.png',
+    '/uploads/services/service-1778582553283-206475757.png',
+    '/uploads/services/service-1778582562710-446984698.png',
+    '/uploads/services/service-1778584433771-802882379.png'
+  ]
+};
+
 const serviceGroups = [
   {
-    categorySlug: 'furniture-services',
+    categorySlug: 'wooden-work-services',
     services: [
       'Wooden Doors',
       'Wooden Windows',
@@ -187,6 +243,32 @@ const priorityServices = [
   'Luxury Interior Design'
 ];
 
+const buildMediaPayload = (categorySlug, index) => {
+  const pool = serviceMediaPools[categorySlug] || [];
+
+  if (!pool.length) {
+    return {
+      heroImage: '',
+      images: [],
+      beforeImages: [],
+      afterImages: [],
+      videos: []
+    };
+  }
+
+  const images = [0, 1, 2]
+    .map(offset => pool[(index + offset) % pool.length])
+    .filter(Boolean);
+
+  return {
+    heroImage: images[0] || '',
+    images,
+    beforeImages: images[1] ? [images[1]] : [],
+    afterImages: images[2] ? [images[2]] : [],
+    videos: []
+  };
+};
+
 const seedBusinessServices = async () => {
   await mongoose.connect(MONGODB_URI);
 
@@ -216,6 +298,7 @@ const seedBusinessServices = async () => {
         seoTitle: autoFields.seoTitle,
         seoDescription: autoFields.seoDescription,
         tags: autoFields.tags,
+        ...buildMediaPayload(group.categorySlug, index),
         faq: [],
         order: index + 1,
         isActive: true

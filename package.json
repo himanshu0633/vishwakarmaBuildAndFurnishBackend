@@ -3,6 +3,9 @@
     "start": "node server.js",
     "seed:catalog": "node scripts/seedCatalog.js",
     "seed:business-services": "node scripts/seedBusinessServices.js",
+    "seed:current-catalog": "node scripts/seedCurrentCatalog.js",
+    "export:current-catalog-seed": "node scripts/exportCurrentCatalogSeed.js",
+    "update:service-tags": "node scripts/updateServiceSeoTags.js",
     "seed:blogs": "node scripts/seedBlogs.js",
     "fix:category-indexes": "node scripts/fixCategoryIndexes.js"
   },

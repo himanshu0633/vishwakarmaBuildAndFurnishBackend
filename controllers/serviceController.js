@@ -149,7 +149,6 @@ const normalizeServicePayload = (body, categoryName = '', file) => {
     shortDescription: body.shortDescription || '',
     fullDescription: body.fullDescription || '',
     emoji: body.emoji || '🔧',
-    heroImage: uploadedImage || body.heroImage || '',
     popular: Boolean(body.popular),
     featured: Boolean(body.featured),
     priceStarting: body.priceStarting || '',
@@ -162,6 +161,10 @@ const normalizeServicePayload = (body, categoryName = '', file) => {
     order: Number(body.order) || 0,
     isActive: body.isActive !== undefined ? Boolean(body.isActive) : true
   };
+
+  if (uploadedImage || body.heroImage !== undefined) {
+    payload.heroImage = uploadedImage || body.heroImage || '';
+  }
 
   if (Object.prototype.hasOwnProperty.call(body, 'images')) {
     payload.images = asArray(body.images);
@@ -535,7 +538,14 @@ exports.uploadServiceMedia = async (req, res) => {
       ...collectUrls('videos', file => file.mimetype.startsWith('video/'))
     ];
 
-    if (!service.heroImage && service.images.length > 0) {
+    const uploadedHeroImage = [
+      ...(files.heroImage || []),
+      ...(files.heroImageFile || [])
+    ].find(file => file.mimetype.startsWith('image/'));
+
+    if (uploadedHeroImage) {
+      service.heroImage = publicUploadPath('services', uploadedHeroImage.filename);
+    } else if (!service.heroImage && service.images.length > 0) {
       service.heroImage = service.images[0];
     }
 
@@ -673,9 +683,9 @@ exports.uploadServiceMediaFromUrls = async (req, res) => {
 exports.deleteServiceMedia = async (req, res) => {
   try {
     const { field, url } = req.body;
-    const allowedFields = ['images', 'beforeImages', 'afterImages', 'videos'];
+    const allowedFields = ['heroImage', 'images', 'beforeImages', 'afterImages', 'videos'];
 
-    if (!allowedFields.includes(field) || !url) {
+    if (!allowedFields.includes(field) || (field !== 'heroImage' && !url)) {
       return res.status(400).json({
         success: false,
         message: 'Valid media field and url are required'
@@ -691,7 +701,11 @@ exports.deleteServiceMedia = async (req, res) => {
       });
     }
 
-    service[field] = (service[field] || []).filter(item => item !== url);
+    if (field === 'heroImage') {
+      service.heroImage = '';
+    } else {
+      service[field] = (service[field] || []).filter(item => item !== url);
+    }
     await service.save();
 
     res.json({

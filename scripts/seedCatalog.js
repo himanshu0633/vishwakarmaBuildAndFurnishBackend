@@ -7,6 +7,37 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/industrial-equipment-solutions';
 
+const media = {
+  furniture: [
+    '/uploads/services/service-1778313028408-572604629.png',
+    '/uploads/services/service-1778318103597-311567816.jpg',
+    '/uploads/services/service-1778318503449-38707768.png'
+  ],
+  construction: [
+    '/uploads/services/service-1778323595757-336505731.png',
+    '/uploads/services/service-1778334916286-751475471.jpg',
+    '/uploads/services/service-1778334916287-448620259.jpg'
+  ],
+  interior: [
+    '/uploads/services/service-1778334916296-533906718.jpg',
+    '/uploads/services/service-1778581763987-169674416.png',
+    '/uploads/services/service-1778584433771-802882379.png'
+  ],
+  wardrobe: [
+    '/uploads/services/service-1778321073566-960284640.png',
+    '/uploads/services/service-1778321155334-613312876.png',
+    '/uploads/services/service-1778321247668-982289621.png'
+  ]
+};
+
+const buildMediaFields = (images = []) => ({
+  heroImage: images[0] || '',
+  images,
+  beforeImages: images[1] ? [images[1]] : [],
+  afterImages: images[2] ? [images[2]] : [],
+  videos: []
+});
+
 const seedCatalog = async () => {
   await mongoose.connect(MONGODB_URI);
 
@@ -14,12 +45,12 @@ const seedCatalog = async () => {
   await Category.deleteMany({});
 
   const furnitureCategory = await Category.create({
-    name: 'Furniture Services',
-    slug: 'furniture-services',
+    name: 'wooden work Services',
+    slug: 'wooden-work-services',
     emoji: '🛋️',
     icon: '🛋️',
     description: 'Custom furniture manufacturing services',
-    image: '',
+    image: media.furniture[0],
     seoTitle: 'Furniture Services in Charkhi Dadri',
     seoDescription: 'Luxury custom furniture services in Haryana',
     isActive: true,
@@ -32,7 +63,7 @@ const seedCatalog = async () => {
     emoji: '🏠',
     icon: '🏠',
     description: 'Complete house construction and trusted contractor services',
-    image: '',
+    image: media.construction[0],
     seoTitle: 'House Construction Services in Charkhi Dadri',
     seoDescription: 'Premium house construction contractor services in Haryana',
     isActive: true,
@@ -45,7 +76,7 @@ const seedCatalog = async () => {
     emoji: '✨',
     icon: '✨',
     description: 'Modern interior design and furnishing solutions',
-    image: '',
+    image: media.interior[0],
     seoTitle: 'Interior Services in Charkhi Dadri',
     seoDescription: 'Modern interior solutions for homes and commercial spaces',
     isActive: true,
@@ -60,7 +91,7 @@ const seedCatalog = async () => {
       emoji: '🍽️',
       shortDescription: 'Modern modular kitchen solutions',
       fullDescription: 'Luxury modular kitchen design, manufacturing, and installation with premium finishes and practical storage planning.',
-      images: [],
+      ...buildMediaFields(media.furniture),
       popular: true,
       featured: true,
       priceStarting: 'Custom quote',
@@ -82,7 +113,7 @@ const seedCatalog = async () => {
       emoji: '🏠',
       shortDescription: 'End-to-end home construction from foundation to finishing',
       fullDescription: 'Complete house construction with planning, material coordination, civil work, finishing, and contractor management.',
-      images: [],
+      ...buildMediaFields(media.construction),
       popular: true,
       featured: true,
       priceStarting: 'Site visit required',
@@ -99,7 +130,7 @@ const seedCatalog = async () => {
       emoji: '🚪',
       shortDescription: 'Premium wardrobe manufacturing for modern homes',
       fullDescription: 'Custom wardrobe design and manufacturing with sliding, hinged, and modular storage options.',
-      images: [],
+      ...buildMediaFields(media.wardrobe),
       popular: true,
       featured: false,
       priceStarting: 'Custom quote',
@@ -116,7 +147,7 @@ const seedCatalog = async () => {
       emoji: '✨',
       shortDescription: 'Elegant interior solutions for home and commercial spaces',
       fullDescription: 'Modern interior planning, furniture placement, finishing, and decor-focused execution.',
-      images: [],
+      ...buildMediaFields(media.interior),
       popular: false,
       featured: true,
       priceStarting: 'Custom quote',

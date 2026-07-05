@@ -11,6 +11,26 @@ const slugify = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const buildSlugCandidates = (value = '') => {
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(String(value || ''));
+    } catch {
+      return String(value || '');
+    }
+  })();
+
+  return [
+    value,
+    decoded,
+    decoded.toLowerCase(),
+    slugify(decoded)
+  ]
+    .map((item) => String(item || '').trim().replace(/^\/+|\/+$/g, ''))
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index);
+};
+
 const normalizeList = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);
@@ -314,7 +334,8 @@ exports.getAllBlogs = async (req, res) => {
 
 exports.getBlogBySlug = async (req, res) => {
   try {
-    const query = { slug: req.params.slug };
+    const slugCandidates = buildSlugCandidates(req.params.slug);
+    const query = { slug: { $in: slugCandidates } };
 
     if (req.query.includeInactive !== 'true') {
       query.isActive = true;

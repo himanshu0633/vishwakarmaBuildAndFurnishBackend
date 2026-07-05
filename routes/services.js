@@ -69,6 +69,8 @@ router.post(
   '/:id/media',
   authMiddleware,
   upload.fields([
+    { name: 'heroImage', maxCount: 1 },
+    { name: 'heroImageFile', maxCount: 1 },
     { name: 'media', maxCount: 12 },
     { name: 'images', maxCount: 20 },
     { name: 'beforeImages', maxCount: 20 },
