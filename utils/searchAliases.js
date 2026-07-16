@@ -14,14 +14,19 @@ const aliasGroups = [
     aliases: [
       'darwaza', 'darwaja', 'darvaza', 'darvaja', 'drwaza', 'drwaja', 'darwaaza', 'darwaaja',
       'darwaze', 'darwaaze', 'dervaza', 'derwaza', 'darwza', 'darvza', 'gate', 'main door',
-      'entrance', 'entry gate', 'wooden door'
+      'entrance', 'entry gate', 'wooden door', 'lakdi ka darwaza', 'lakdi ke darwaze',
+      'lakdi darwaza', 'lakdi door', 'lakdi ka door', 'wood ka darwaza',
+      'darwaza banane wala', 'lakdi ka darwaza banane wala', 'door banane wala',
+      'darwaze ka kaam', 'darwaza ka kaam karne wala'
     ]
   },
   {
     targetKeywords: ['wooden windows', 'wooden window', 'window'],
     aliases: [
       'khidki', 'khirki', 'khidkee', 'khidkey', 'khirkee', 'khirkey', 'khidkii', 'khidqi',
-      'khidky', 'khidkie', 'khirkii', 'khidkiya', 'window', 'windows'
+      'khidky', 'khidkie', 'khirkii', 'khidkiya', 'window', 'windows',
+      'lakdi ki khidki', 'lakdi window', 'khidki banane wala', 'window banane wala',
+      'khidki ka kaam', 'khidki ka kaam karne wala'
     ]
   },
   {
@@ -31,7 +36,9 @@ const aliasGroups = [
       'designer door', 'interior door', 'modular door', 'panel door', 'veneer door',
       'pvc coated door', 'decorative door', 'engineered wood door', 'readymade door',
       'bedroom door', 'office door', 'plywood darwaza', 'wooden darwaza',
-      'flush darwaz', 'laminate darwaza', 'designer darwaza'
+      'flush darwaz', 'laminate darwaza', 'designer darwaza', 'ply ka darwaza',
+      'plywood ka darwaza', 'ply door banane wala', 'ply board ka kaam',
+      'ply board door banane wala'
     ]
   },
   {
@@ -42,7 +49,9 @@ const aliasGroups = [
       'kitchen setup', 'kitchen design', 'kitchen solution', 'kitchen studio', 'kitchen decor',
       'wooden kitchen', 'pvc kitchen', 'acrylic kitchen', 'aluminium kitchen', 'italian kitchen',
       'moduler kitchen', 'modlar kitchen', 'modular kichen', 'modern rasoi', 'smart rasoi',
-      'kitchen wala setup', 'designer rasoi', 'rasoi'
+      'kitchen wala setup', 'designer rasoi', 'rasoi', 'rasoi banane wala',
+      'kitchen banane wala', 'modular kitchen banane wala', 'rasoi ka kaam',
+      'kitchen ka kaam karne wala'
     ]
   },
   {
@@ -51,7 +60,8 @@ const aliasGroups = [
       'wardrob', 'wardrope', 'wadrobe', 'wardrobe cabinet', 'closet', 'cupboard', 'almirah',
       'almari', 'sliding wardrobe', 'modular wardrobe', 'designer wardrobe', 'wooden wardrobe',
       'luxury wardrobe', 'smart wardrobe', 'storage cabinet', 'dressing wardrobe', 'almeera',
-      'almira', 'kapdo ki almari'
+      'almira', 'kapdo ki almari', 'almari banane wala', 'wardrobe banane wala',
+      'kapdo ki almari banane wala', 'almari ka kaam'
     ]
   },
   {
@@ -61,7 +71,8 @@ const aliasGroups = [
       'media unit', 'entertainment console', 'tv wall panel', 'designer tv unit',
       'modular tv unit', 'wooden tv unit', 'led panel', 'led unit', 'wall mounted tv unit',
       'modern tv unit', 'luxury tv unit', 'tv unitt', 'tv panal', 'tv cabnit', 'tv standd',
-      'led panal', 'tv wall', 'tv setup'
+      'led panal', 'tv wall', 'tv setup', 'tv panel banane wala', 'tv unit banane wala',
+      'led panel banane wala', 'tv panel ka kaam', 'tv wall ka kaam'
     ]
   },
   {
@@ -79,7 +90,9 @@ const aliasGroups = [
       'wooden bed', 'single bed', 'king size bed', 'queen size bed', 'hydraulic bed',
       'storage bed', 'designer bed', 'luxury bed', 'modern bed', 'sofa cum bed', 'bunk bed',
       'kids bed', 'cot', 'bedroom set', 'platform bed', 'upholstered bed', 'box bed',
-      'bedd', 'beed', 'wooden bedd', 'double bedd', 'bed set', 'palang', 'khat', 'beddroom bed'
+      'bedd', 'beed', 'wooden bedd', 'double bedd', 'bed set', 'palang', 'khat', 'beddroom bed',
+      'bed banane wala', 'palang banane wala', 'lakdi ka bed', 'lakdi ka palang',
+      'bed ka kaam', 'double bed banane wala'
     ]
   },
   {
@@ -90,7 +103,10 @@ const aliasGroups = [
       'construction work', 'building solutions', 'home development', 'structure work',
       'interior construction', 'architecture construction', 'house constraction',
       'home constraction', 'ghar banana', 'makaan construction', 'building work',
-      'civil work', 'ghar ka kaam'
+      'civil work', 'ghar ka kaam', 'ghar banane wala', 'ghar banwane wala',
+      'makan banane wala', 'makaan banane wala', 'house banane wala',
+      'ghar ka thekedar', 'makan ka thekedar', 'construction wala', 'raj mistri ka kaam',
+      'civil ka kaam karne wala'
     ]
   },
   {
@@ -100,7 +116,9 @@ const aliasGroups = [
       'house wiring', 'commercial wiring', 'industrial electrical work', 'power solutions',
       'electrical maintenance', 'electric fitting', 'switch board work', 'lighting work',
       'cctv electrical work', 'smart electrical solutions', 'electical work', 'bijli ka kaam',
-      'wiring fitting', 'light fitting', 'board fitting'
+      'wiring fitting', 'light fitting', 'board fitting', 'electric ka kaam',
+      'bijli ka kaam karne wala', 'electric ka kaam karne wala', 'wiring karne wala',
+      'light fitting karne wala', 'electrician charkhi dadri'
     ]
   },
   {
@@ -110,7 +128,8 @@ const aliasGroups = [
       'wall finish', 'decorative paint', 'home painting', 'building painting', 'spray painting',
       'designer paint work', 'waterproof paint work', 'putty paint work', 'color coating',
       'premium paint finish', 'painting ka kaam', 'rang rogan', 'color work', 'wall color',
-      'paintig work', 'painter work'
+      'paintig work', 'painter work', 'paint ka kaam', 'paint karne wala',
+      'painter charkhi dadri', 'rang karne wala', 'wall paint karne wala'
     ]
   },
   {
@@ -128,7 +147,43 @@ const aliasGroups = [
       'tile installation', 'marble installation', 'flooring work', 'granite work', 'stone work',
       'floor tile work', 'wall tile work', 'italian marble work', 'designer flooring',
       'tile fitting', 'marble fitting', 'luxury flooring', 'wall cladding work', 'stone flooring',
-      'farsh ka kaam', 'pathar work', 'tailes work', 'marbal work', 'flooring ka kaam'
+      'farsh ka kaam', 'pathar work', 'tailes work', 'marbal work', 'flooring ka kaam',
+      'tiles lagane wala', 'marble lagane wala', 'farsh lagane wala',
+      'tiles ka kaam karne wala', 'marble ka kaam karne wala'
+    ]
+  },
+  {
+    targetKeywords: ['sofa', 'sofa set'],
+    aliases: [
+      'sofa banane wala', 'sofa set banane wala', 'sofa maker', 'custom sofa',
+      'designer sofa', 'wooden sofa', 'sofa ka kaam', 'sofa repair', 'sofa design',
+      'sofa set ka kaam karne wala'
+    ]
+  },
+  {
+    targetKeywords: ['furniture', 'customized furniture', 'office furniture'],
+    aliases: [
+      'furniture banane wala', 'furniture wala', 'lakdi ka furniture',
+      'custom furniture banane wala', 'office furniture banane wala',
+      'furniture ka kaam', 'furniture ka kaam karne wala', 'carpenter',
+      'carpenter charkhi dadri', 'badhai', 'badhai ka kaam'
+    ]
+  },
+  {
+    targetKeywords: ['false ceiling', 'pop design', 'pop'],
+    aliases: [
+      'pop ka kaam', 'pop ka kaam karne wala', 'pop design wala',
+      'pop banane wala', 'ceiling ka kaam', 'false ceiling ka kaam',
+      'false ceiling banane wala', 'chhat ka pop', 'pop ceiling design',
+      'pop mistri'
+    ]
+  },
+  {
+    targetKeywords: ['wall panels', 'pvc panels', 'wall panel'],
+    aliases: [
+      'wall panel ka kaam', 'pvc panel ka kaam', 'pvc lagane wala',
+      'wall panel lagane wala', 'deewar panel', 'deewar ka panel',
+      'wall panel banane wala'
     ]
   }
 ];

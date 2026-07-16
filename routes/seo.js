@@ -17,6 +17,15 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
+const serviceAreas = [
+  { slug: 'charkhi-dadri', priority: '0.85' },
+  { slug: 'bhiwani', priority: '0.75' },
+  { slug: 'rohtak', priority: '0.75' },
+  { slug: 'mahendragarh', priority: '0.75' },
+  { slug: 'rewari', priority: '0.75' },
+  { slug: 'jhajjar', priority: '0.75' }
+];
+
 const sitemapUrl = ({ loc, lastmod, changefreq = 'weekly', priority = '0.7', images = [], assetOrigin = '', title = '' }) => {
   const imageXml = images
     .filter(Boolean)
@@ -66,11 +75,19 @@ router.get('/sitemap.xml', async (req, res, next) => {
       Blog.find({ isActive: true }).select('title slug coverImage blogImage blogImages updatedAt publishedAt')
     ]);
 
-    const staticPages = ['/', '/services', '/blogs', '/gallery', '/about', '/contact'].map((path) =>
+    const staticPages = ['/', '/services', '/blogs', '/gallery', '/about', '/house-construction-guide', '/contact'].map((path) =>
       sitemapUrl({
         loc: `${origin}${path}`,
         changefreq: path === '/' ? 'daily' : 'weekly',
         priority: path === '/' ? '1.0' : '0.8'
+      })
+    );
+
+    const locationPages = serviceAreas.map((area) =>
+      sitemapUrl({
+        loc: `${origin}/locations/${area.slug}`,
+        changefreq: 'weekly',
+        priority: area.priority
       })
     );
 
@@ -108,6 +125,7 @@ router.get('/sitemap.xml', async (req, res, next) => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${[
       ...staticPages,
+      ...locationPages,
       ...categoryPages,
       ...servicePages,
       ...blogPages

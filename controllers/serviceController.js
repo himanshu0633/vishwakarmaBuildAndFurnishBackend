@@ -57,6 +57,65 @@ const asArray = (value) => {
     .filter(Boolean);
 };
 
+const cleanText = (value = '') =>
+  String(value || '').replace(/\s+/g, ' ').trim();
+
+const titleCase = (value = '') =>
+  cleanText(value)
+    .replace(/\w\S*/g, word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
+const buildDefaultMediaSeoText = (service = {}, field = 'images') => {
+  const serviceName = titleCase(service.name || 'Service');
+  const fieldLabel = {
+    heroImage: 'hero image',
+    images: 'project image',
+    beforeImages: 'before work image',
+    afterImages: 'after work image',
+    videos: 'project video'
+  }[field] || 'project image';
+
+  return `Best ${serviceName} design 2026 ${fieldLabel} in Charkhi Dadri by Vishwakarma Build & Furnish`;
+};
+
+const buildMediaSeoEntry = (service, { url, field = 'images', type = 'image', alt = '', title = '', caption = '' }) => {
+  const defaultText = buildDefaultMediaSeoText(service, field);
+
+  return {
+    url,
+    field,
+    type,
+    alt: cleanText(alt) || defaultText,
+    title: cleanText(title) || defaultText,
+    caption: cleanText(caption) || `${defaultText}. Contact for custom design, material selection, fitting and finishing.`
+  };
+};
+
+const upsertMediaSeo = (service, entries = []) => {
+  const existing = new Map((service.mediaSeo || []).map(item => [item.url, item]));
+
+  entries.filter(item => item?.url).forEach((entry) => {
+    const previous = existing.get(entry.url) || {};
+    existing.set(entry.url, {
+      ...previous,
+      ...entry,
+      alt: cleanText(entry.alt || previous.alt),
+      title: cleanText(entry.title || previous.title),
+      caption: cleanText(entry.caption || previous.caption)
+    });
+  });
+
+  service.mediaSeo = Array.from(existing.values());
+};
+
+const getMediaSeoForUrl = (service, url) =>
+  (service.mediaSeo || []).find(item => item.url === url) || {};
+
+const mediaSeoFromBody = (body = {}) => ({
+  alt: body.mediaAlt || body.alt || '',
+  title: body.mediaTitle || body.title || '',
+  caption: body.mediaCaption || body.caption || ''
+});
+
 const getMediaTypeFromContent = (contentType = '', url = '') => {
   const cleanContentType = contentType.toLowerCase();
   const pathname = (() => {
@@ -262,7 +321,7 @@ exports.getServiceMediaBySlug = async (req, res) => {
     const service = await Service.findOne({
       slug: req.params.slug,
       isActive: true
-    }).select('name slug images beforeImages afterImages videos');
+    }).select('name slug images beforeImages afterImages videos mediaSeo');
 
     if (!service) {
       return res.status(404).json({
@@ -276,7 +335,16 @@ exports.getServiceMediaBySlug = async (req, res) => {
       ...(service.beforeImages || []).map(url => ({ field: 'beforeImages', title: 'Before Images', type: 'image', url })),
       ...(service.afterImages || []).map(url => ({ field: 'afterImages', title: 'After Images', type: 'image', url })),
       ...(service.videos || []).map(url => ({ field: 'videos', title: 'Videos / Reels', type: 'video', url }))
-    ];
+    ].map(item => {
+      const seo = getMediaSeoForUrl(service, item.url);
+      const fallbackSeo = buildMediaSeoEntry(service, item);
+      return {
+        ...item,
+        alt: seo.alt || fallbackSeo.alt,
+        seoTitle: seo.title || fallbackSeo.title,
+        caption: seo.caption || fallbackSeo.caption
+      };
+    });
 
     const total = mediaItems.length;
     const totalPages = Math.max(Math.ceil(total / limit), 1);
@@ -504,6 +572,7 @@ exports.uploadServiceMedia = async (req, res) => {
     const collectUrls = (fieldName, matcher = () => true) => (files[fieldName] || [])
       .filter(matcher)
       .map(file => publicUploadPath('services', file.filename));
+    const mediaSeoInput = mediaSeoFromBody(req.body);
 
     const legacyFiles = files.media || [];
     const legacyImageUrls = [];
@@ -519,23 +588,32 @@ exports.uploadServiceMedia = async (req, res) => {
       }
     });
 
-    service.images = [
-      ...(service.images || []),
+    const uploadedImages = [
       ...legacyImageUrls,
       ...collectUrls('images', file => file.mimetype.startsWith('image/'))
     ];
+    const uploadedBeforeImages = collectUrls('beforeImages', file => file.mimetype.startsWith('image/'));
+    const uploadedAfterImages = collectUrls('afterImages', file => file.mimetype.startsWith('image/'));
+    const uploadedVideos = [
+      ...legacyVideoUrls,
+      ...collectUrls('videos', file => file.mimetype.startsWith('video/'))
+    ];
+
+    service.images = [
+      ...(service.images || []),
+      ...uploadedImages
+    ];
     service.beforeImages = [
       ...(service.beforeImages || []),
-      ...collectUrls('beforeImages', file => file.mimetype.startsWith('image/'))
+      ...uploadedBeforeImages
     ];
     service.afterImages = [
       ...(service.afterImages || []),
-      ...collectUrls('afterImages', file => file.mimetype.startsWith('image/'))
+      ...uploadedAfterImages
     ];
     service.videos = [
       ...(service.videos || []),
-      ...legacyVideoUrls,
-      ...collectUrls('videos', file => file.mimetype.startsWith('video/'))
+      ...uploadedVideos
     ];
 
     const uploadedHeroImage = [
@@ -548,6 +626,14 @@ exports.uploadServiceMedia = async (req, res) => {
     } else if (!service.heroImage && service.images.length > 0) {
       service.heroImage = service.images[0];
     }
+
+    upsertMediaSeo(service, [
+      ...uploadedImages.map(url => buildMediaSeoEntry(service, { url, field: 'images', type: 'image', ...mediaSeoInput })),
+      ...uploadedBeforeImages.map(url => buildMediaSeoEntry(service, { url, field: 'beforeImages', type: 'image', ...mediaSeoInput })),
+      ...uploadedAfterImages.map(url => buildMediaSeoEntry(service, { url, field: 'afterImages', type: 'image', ...mediaSeoInput })),
+      ...uploadedVideos.map(url => buildMediaSeoEntry(service, { url, field: 'videos', type: 'video', ...mediaSeoInput })),
+      ...(uploadedHeroImage ? [buildMediaSeoEntry(service, { url: service.heroImage, field: 'heroImage', type: 'image', ...mediaSeoInput })] : [])
+    ]);
 
     await service.save();
 
@@ -591,6 +677,7 @@ exports.uploadServiceMediaFromUrls = async (req, res) => {
       videos: [],
       failed: []
     };
+    const mediaSeoInput = mediaSeoFromBody(req.body);
 
     const uploadDir = ensureUploadDir('services');
 
@@ -662,6 +749,11 @@ exports.uploadServiceMediaFromUrls = async (req, res) => {
       service.heroImage = service.images[0];
     }
 
+    upsertMediaSeo(service, [
+      ...results.images.map(url => buildMediaSeoEntry(service, { url, field: 'images', type: 'image', ...mediaSeoInput })),
+      ...results.videos.map(url => buildMediaSeoEntry(service, { url, field: 'videos', type: 'video', ...mediaSeoInput }))
+    ]);
+
     await service.save();
 
     res.json({
@@ -701,11 +793,14 @@ exports.deleteServiceMedia = async (req, res) => {
       });
     }
 
+    const removedUrl = field === 'heroImage' ? service.heroImage : url;
+
     if (field === 'heroImage') {
       service.heroImage = '';
     } else {
       service[field] = (service[field] || []).filter(item => item !== url);
     }
+    service.mediaSeo = (service.mediaSeo || []).filter(item => item.url !== removedUrl);
     await service.save();
 
     res.json({

@@ -17,6 +17,42 @@ const faqSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const mediaSeoSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      trim: true,
+      required: true
+    },
+    field: {
+      type: String,
+      trim: true,
+      default: 'images'
+    },
+    type: {
+      type: String,
+      trim: true,
+      default: 'image'
+    },
+    alt: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    title: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    caption: {
+      type: String,
+      trim: true,
+      default: ''
+    }
+  },
+  { _id: false }
+);
+
 const serviceSchema = new mongoose.Schema(
   {
     categoryId: {
@@ -66,6 +102,10 @@ const serviceSchema = new mongoose.Schema(
     },
     videos: {
       type: [String],
+      default: []
+    },
+    mediaSeo: {
+      type: [mediaSeoSchema],
       default: []
     },
     popular: {
