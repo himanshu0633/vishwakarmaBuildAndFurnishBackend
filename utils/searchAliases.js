@@ -17,7 +17,10 @@ const aliasGroups = [
       'entrance', 'entry gate', 'wooden door', 'lakdi ka darwaza', 'lakdi ke darwaze',
       'lakdi darwaza', 'lakdi door', 'lakdi ka door', 'wood ka darwaza',
       'darwaza banane wala', 'lakdi ka darwaza banane wala', 'door banane wala',
-      'darwaze ka kaam', 'darwaza ka kaam karne wala'
+      'darwaze ka kaam', 'darwaza ka kaam karne wala', 'wooden door manufacturer',
+      'main gate', 'wooden entrance door', 'designer wooden door', 'solid wood door',
+      'door manufacturer charkhi dadri', 'wooden door near me', 'door maker',
+      'custom door manufacturer', 'wooden doors charkhi dadri'
     ]
   },
   {
@@ -26,7 +29,9 @@ const aliasGroups = [
       'khidki', 'khirki', 'khidkee', 'khidkey', 'khirkee', 'khirkey', 'khidkii', 'khidqi',
       'khidky', 'khidkie', 'khirkii', 'khidkiya', 'window', 'windows',
       'lakdi ki khidki', 'lakdi window', 'khidki banane wala', 'window banane wala',
-      'khidki ka kaam', 'khidki ka kaam karne wala'
+      'khidki ka kaam', 'khidki ka kaam karne wala', 'wooden window manufacturer',
+      'custom wooden windows', 'window maker', 'window contractor',
+      'window manufacturer charkhi dadri', 'wooden window near me'
     ]
   },
   {
@@ -51,7 +56,11 @@ const aliasGroups = [
       'moduler kitchen', 'modlar kitchen', 'modular kichen', 'modern rasoi', 'smart rasoi',
       'kitchen wala setup', 'designer rasoi', 'rasoi', 'rasoi banane wala',
       'kitchen banane wala', 'modular kitchen banane wala', 'rasoi ka kaam',
-      'kitchen ka kaam karne wala'
+      'kitchen ka kaam karne wala', 'modular kitchen charkhi dadri',
+      'modular kitchen near me', 'kitchen designer charkhi dadri',
+      'kitchen contractor charkhi dadri', 'best modular kitchen', 'custom kitchen',
+      'kitchen maker', 'kitchen renovation', 'kitchen designer', 'kitchen contractor',
+      'kitchen cabinet maker', 'kitchen interior designer'
     ]
   },
   {
@@ -61,7 +70,9 @@ const aliasGroups = [
       'almari', 'sliding wardrobe', 'modular wardrobe', 'designer wardrobe', 'wooden wardrobe',
       'luxury wardrobe', 'smart wardrobe', 'storage cabinet', 'dressing wardrobe', 'almeera',
       'almira', 'kapdo ki almari', 'almari banane wala', 'wardrobe banane wala',
-      'kapdo ki almari banane wala', 'almari ka kaam'
+      'kapdo ki almari banane wala', 'almari ka kaam', 'wardrobe designer',
+      'wardrobe maker', 'custom wardrobe', 'wardrobe near me', 'wardrobe charkhi dadri',
+      'cupboard maker', 'wardrobe maker charkhi dadri'
     ]
   },
   {
@@ -72,7 +83,9 @@ const aliasGroups = [
       'modular tv unit', 'wooden tv unit', 'led panel', 'led unit', 'wall mounted tv unit',
       'modern tv unit', 'luxury tv unit', 'tv unitt', 'tv panal', 'tv cabnit', 'tv standd',
       'led panal', 'tv wall', 'tv setup', 'tv panel banane wala', 'tv unit banane wala',
-      'led panel banane wala', 'tv panel ka kaam', 'tv wall ka kaam'
+      'led panel banane wala', 'tv panel ka kaam', 'tv wall ka kaam', 'tv wall design',
+      'tv unit designer', 'tv panel contractor', 'tv unit near me',
+      'tv unit designer charkhi dadri'
     ]
   },
   {
@@ -92,7 +105,7 @@ const aliasGroups = [
       'kids bed', 'cot', 'bedroom set', 'platform bed', 'upholstered bed', 'box bed',
       'bedd', 'beed', 'wooden bedd', 'double bedd', 'bed set', 'palang', 'khat', 'beddroom bed',
       'bed banane wala', 'palang banane wala', 'lakdi ka bed', 'lakdi ka palang',
-      'bed ka kaam', 'double bed banane wala'
+      'bed ka kaam', 'double bed banane wala', 'bed manufacturer', 'bed maker', 'bed near me'
     ]
   },
   {
@@ -106,7 +119,23 @@ const aliasGroups = [
       'civil work', 'ghar ka kaam', 'ghar banane wala', 'ghar banwane wala',
       'makan banane wala', 'makaan banane wala', 'house banane wala',
       'ghar ka thekedar', 'makan ka thekedar', 'construction wala', 'raj mistri ka kaam',
-      'civil ka kaam karne wala'
+      'civil ka kaam karne wala', 'house construction contractor', 'home builder',
+      'civil contractor', 'building contractor', 'construction company charkhi dadri',
+      'house builder charkhi dadri', 'construction near me', 'turnkey contractor',
+      'construction company', 'home construction near me', 'residential construction',
+      'commercial construction', 'budget home construction', 'luxury home construction',
+      'construction services haryana', 'contractor charkhi dadri', 'civil contractor charkhi dadri',
+      'home renovation contractor', 'house renovation services'
+    ]
+  },
+  {
+    targetKeywords: ['interior design', 'interior', 'modular interior', 'living room interior', 'bedroom interior'],
+    aliases: [
+      'interior designer', 'interior decorator', 'home interior', 'office interior',
+      'luxury interior', 'modern interior', 'interior designer charkhi dadri',
+      'interior contractor', 'interior company', 'interior renovation',
+      'house interior designer', 'interior near me', 'best interior designer',
+      'living room interior', 'bedroom interior'
     ]
   },
   {
@@ -138,7 +167,8 @@ const aliasGroups = [
       'plumbing services', 'pipe fitting', 'water pipeline work', 'sanitary work',
       'bathroom fitting', 'water connection work', 'drainage work', 'pipe installation',
       'water system setup', 'bathroom plumbing', 'kitchen plumbing', 'plumbing maintenance',
-      'plumbing solutions', 'plumber work', 'paani ki line ka kaam', 'nal ka kaam', 'pipe work'
+      'plumbing solutions', 'plumber work', 'paani ki line ka kaam', 'nal ka kaam', 'pipe work',
+      'plumber charkhi dadri'
     ]
   },
   {
@@ -149,7 +179,9 @@ const aliasGroups = [
       'tile fitting', 'marble fitting', 'luxury flooring', 'wall cladding work', 'stone flooring',
       'farsh ka kaam', 'pathar work', 'tailes work', 'marbal work', 'flooring ka kaam',
       'tiles lagane wala', 'marble lagane wala', 'farsh lagane wala',
-      'tiles ka kaam karne wala', 'marble ka kaam karne wala'
+      'tiles ka kaam karne wala', 'marble ka kaam karne wala', 'tile contractor',
+      'marble contractor', 'flooring contractor', 'tiles near me',
+      'marble work charkhi dadri', 'flooring specialist', 'tiles contractor charkhi dadri'
     ]
   },
   {
@@ -166,7 +198,13 @@ const aliasGroups = [
       'furniture banane wala', 'furniture wala', 'lakdi ka furniture',
       'custom furniture banane wala', 'office furniture banane wala',
       'furniture ka kaam', 'furniture ka kaam karne wala', 'carpenter',
-      'carpenter charkhi dadri', 'badhai', 'badhai ka kaam'
+      'carpenter charkhi dadri', 'badhai', 'badhai ka kaam', 'furniture shop charkhi dadri',
+      'furniture store charkhi dadri', 'custom furniture maker', 'furniture manufacturer',
+      'wood furniture maker', 'furniture near me', 'best furniture shop',
+      'furniture contractor', 'furniture shop', 'furniture store', 'custom furniture',
+      'wooden furniture', 'office furniture', 'home furniture', 'furniture manufacturer charkhi dadri',
+      'carpenter furniture work', 'custom furniture charkhi dadri', 'best carpenter in charkhi dadri',
+      'wooden work contractor'
     ]
   },
   {
@@ -175,7 +213,9 @@ const aliasGroups = [
       'pop ka kaam', 'pop ka kaam karne wala', 'pop design wala',
       'pop banane wala', 'ceiling ka kaam', 'false ceiling ka kaam',
       'false ceiling banane wala', 'chhat ka pop', 'pop ceiling design',
-      'pop mistri'
+      'pop mistri', 'false ceiling contractor', 'gypsum ceiling', 'ceiling design',
+      'false ceiling near me', 'pop contractor', 'ceiling work charkhi dadri',
+      'false ceiling contractor charkhi dadri'
     ]
   },
   {
