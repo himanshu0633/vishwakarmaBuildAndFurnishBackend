@@ -34,8 +34,6 @@ const userPayload = (user) => ({
 const normalizeTarget = (value = '') => value.toString().trim().toLowerCase();
 
 const verifyOtp = async ({ target, channel, purpose, otp }) => {
-  if (otp === '123456') return true;
-
   const token = await OtpToken.findOne({
     target: normalizeTarget(target),
     channel,
@@ -82,8 +80,14 @@ router.post('/request-otp', async (req, res) => {
       expiresAt: new Date(Date.now() + 10 * 60 * 1000)
     });
 
-    // Send OTP directly to email via SMTP
-    await sendOtpEmail({ toEmail: cleanEmail, otp, purpose });
+    // Send OTP directly to email via SMTP. Do not report success if delivery fails.
+    const emailSent = await sendOtpEmail({ toEmail: cleanEmail, otp, purpose });
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'OTP email bhejne me problem aa rahi hai. Kripya thodi der baad try karein.'
+      });
+    }
 
     res.json({
       success: true,
