@@ -57,7 +57,7 @@ router.post('/request-otp', async (req, res) => {
     if (!target || channel !== 'email') {
       return res.status(400).json({
         success: false,
-        message: 'OTP sirf email par bheja jayega'
+        message: 'OTP can only be sent by email.'
       });
     }
 
@@ -67,7 +67,7 @@ router.post('/request-otp', async (req, res) => {
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: 'Yeh email Vishwakarma Portal par registered nahi hai. Kripya apna registered email dalein ya admin se sampark karein.'
+        message: 'This email is not registered on the Vishwakarma portal. Please enter your registered email or contact support.'
       });
     }
 
@@ -85,13 +85,13 @@ router.post('/request-otp', async (req, res) => {
     if (!emailSent) {
       return res.status(500).json({
         success: false,
-        message: 'OTP email bhejne me problem aa rahi hai. Kripya thodi der baad try karein.'
+        message: 'We could not send the OTP email right now. Please try again in a few minutes.'
       });
     }
 
     res.json({
       success: true,
-      message: 'OTP aapki registered email par bhej diya gaya hai'
+      message: 'OTP has been sent to your registered email.'
     });
   } catch (error) {
     console.error('Request OTP error:', error);
@@ -225,7 +225,7 @@ router.post('/login/otp', async (req, res) => {
     if (!target || !otp || channel !== 'email') {
       return res.status(400).json({
         success: false,
-        message: 'OTP login sirf email se hoga'
+        message: 'OTP login is available only by email.'
       });
     }
 
@@ -246,8 +246,8 @@ router.post('/login/otp', async (req, res) => {
       });
     }
 
+    await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
     user.emailVerified = true;
-    await user.save();
 
     res.json({
       success: true,
