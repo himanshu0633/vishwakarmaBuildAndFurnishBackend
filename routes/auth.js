@@ -4,6 +4,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const OtpToken = require('../models/OtpToken');
+const { sendOtpEmail } = require('../utils/sendEmail');
 
 const createToken = (user) => jwt.sign(
   {
@@ -23,6 +24,7 @@ const userPayload = (user) => ({
   whatsappNumber: user.whatsappNumber,
   address: user.address,
   role: user.role,
+  clientId: user.clientId,
   referralCode: user.referralCode,
   mobileVerified: user.mobileVerified,
   whatsappVerified: user.whatsappVerified,
@@ -52,7 +54,7 @@ const verifyOtp = async ({ target, channel, purpose, otp }) => {
 
 router.post('/request-otp', async (req, res) => {
   try {
-    const { target, channel = 'email', purpose = 'verify' } = req.body;
+    const { target, channel = 'email', purpose = 'login' } = req.body;
 
     if (!target || channel !== 'email') {
       return res.status(400).json({
@@ -61,19 +63,31 @@ router.post('/request-otp', async (req, res) => {
       });
     }
 
+    const cleanEmail = normalizeTarget(target);
+    const existingUser = await User.findOne({ email: cleanEmail });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Yeh email Vishwakarma Portal par registered nahi hai. Kripya apna registered email dalein ya admin se sampark karein.'
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await OtpToken.create({
-      target: normalizeTarget(target),
+      target: cleanEmail,
       channel,
       purpose,
       otp,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000)
     });
 
+    // Send OTP directly to email via SMTP
+    await sendOtpEmail({ toEmail: cleanEmail, otp, purpose });
+
     res.json({
       success: true,
-      message: 'OTP generated successfully',
-      devOtp: process.env.NODE_ENV === 'production' ? undefined : otp
+      message: 'OTP aapki registered email par bhej diya gaya hai'
     });
   } catch (error) {
     console.error('Request OTP error:', error);
@@ -164,9 +178,10 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = (email || '').trim().toLowerCase();
     
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({
         success: false,

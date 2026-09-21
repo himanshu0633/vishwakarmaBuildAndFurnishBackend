@@ -35,8 +35,12 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'partner'],
+    enum: ['admin', 'user', 'partner', 'client'],
     default: 'user'
+  },
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Client'
   },
   referralCode: {
     type: String,

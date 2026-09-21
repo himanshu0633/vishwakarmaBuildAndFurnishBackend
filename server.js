@@ -23,6 +23,9 @@ ensureUploadDir('partners');
 ensureUploadDir('marketplace');
 ensureUploadDir('about');
 ensureUploadDir('popups');
+ensureUploadDir('clients');
+ensureUploadDir('expenses');
+ensureUploadDir('site-media');
 
 // Middleware
 app.use(helmet({
@@ -44,7 +47,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
       return callback(null, true);
     }
 
@@ -71,6 +74,8 @@ app.use(
 // API Routes
 app.use('/api/categories', require('./routes/categories')); // Keep categories route
 app.use('/api/services', require('./routes/services')); // Keep services route
+app.use('/api/clients', require('./routes/clients')); // Client Project Management
+app.use('/api/materials', require('./routes/materials')); // Master Materials Catalog
 app.use('/api/blogs', require('./routes/blogs')); // Blog routes
 app.use('/api/gallery', require('./routes/gallery')); // Gallery routes
 app.use('/api/about-content', require('./routes/aboutContent'));
