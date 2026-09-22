@@ -61,7 +61,7 @@ app.use(morgan('dev'));
 
 // Serve static files for uploads
 app.use(
-  '/uploads',
+  ['/uploads', '/api/uploads'],
   cors({ origin: '*' }),
   (req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');

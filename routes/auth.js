@@ -3,8 +3,10 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Client = require('../models/Client');
 const OtpToken = require('../models/OtpToken');
 const { sendOtpEmail } = require('../utils/sendEmail');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const createToken = (user) => jwt.sign(
   {
@@ -296,6 +298,133 @@ router.get('/verify', async (req, res) => {
       success: false,
       message: 'Invalid token'
     });
+  }
+});
+
+// @route   GET /api/auth/profile
+// @desc    Get current user profile + linked client project info
+// @access  Private
+router.get('/profile', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    let client = null;
+    if (user.clientId) {
+      client = await Client.findById(user.clientId);
+    }
+    if (!client) {
+      client = await Client.findOne({
+        $or: [
+          { user: user._id },
+          { email: user.email },
+          ...(user.mobile ? [{ phone: user.mobile }] : [])
+        ]
+      });
+      if (client && !user.clientId) {
+        user.clientId = client._id;
+        if (user.role !== 'client' && user.role !== 'admin') {
+          user.role = 'client';
+        }
+        await user.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      user: userPayload(user),
+      client: client || null
+    });
+  } catch (err) {
+    console.error('Error fetching profile:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update current user profile
+// @access  Private
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { name, mobile, whatsappNumber, address } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (mobile) {
+      const cleanMobile = mobile.toString().trim();
+      const duplicate = await User.findOne({ mobile: cleanMobile, _id: { $ne: user._id } });
+      if (duplicate) {
+        return res.status(400).json({ success: false, message: 'Mobile number already registered by another account' });
+      }
+      user.mobile = cleanMobile;
+    }
+    if (whatsappNumber !== undefined) {
+      user.whatsappNumber = whatsappNumber ? whatsappNumber.toString().trim() : '';
+    }
+    if (address !== undefined) {
+      user.address = address ? address.toString().trim() : '';
+    }
+
+    await user.save();
+
+    // If client exists, sync basic name, phone and location
+    if (user.clientId) {
+      await Client.findByIdAndUpdate(user.clientId, {
+        ...(name && name.trim() ? { name: name.trim() } : {}),
+        ...(mobile ? { phone: mobile.toString().trim() } : {}),
+        ...(address && address.trim() ? { location: address.toString().trim() } : {})
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: userPayload(user)
+    });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
+// @route   PUT /api/auth/change-password
+// @desc    Change user password
+// @access  Private
+router.put('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (err) {
+    console.error('Error changing password:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

@@ -101,9 +101,11 @@ const siteMediaUpload = multer({
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: siteMediaFilter
 }).fields([
-  { name: 'mediaFile', maxCount: 1 },
-  { name: 'media', maxCount: 1 },
-  { name: 'file', maxCount: 1 }
+  { name: 'mediaFile', maxCount: 20 },
+  { name: 'mediaFiles', maxCount: 20 },
+  { name: 'media', maxCount: 20 },
+  { name: 'file', maxCount: 20 },
+  { name: 'files', maxCount: 20 }
 ]);
 
 // Expenses (materials & other)

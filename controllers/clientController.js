@@ -1177,9 +1177,11 @@ exports.resendClientCredentials = async (req, res) => {
 exports.getMyClientProject = async (req, res) => {
   try {
     const userId = req.user.id;
-    const userEmail = (req.user.email || '').toLowerCase();
+    const userEmail = (req.user.email || '').toLowerCase().trim();
+    const userMobile = (req.user.mobile || req.user.phone || '').trim();
+    const cleanMobile = userMobile.replace(/\D/g, '').slice(-10);
 
-    // Find active client by clientId or user ID or email
+    // Find active client by clientId or user ID or email or phone
     let client = null;
     if (req.user.clientId) {
       client = await Client.findOne({ _id: req.user.clientId, isDeleted: { $ne: true } });
@@ -1190,12 +1192,24 @@ exports.getMyClientProject = async (req, res) => {
     if (!client && userEmail) {
       client = await Client.findOne({ email: userEmail, isDeleted: { $ne: true } });
     }
+    if (!client && cleanMobile) {
+      client = await Client.findOne({
+        phone: { $regex: cleanMobile },
+        isDeleted: { $ne: true }
+      });
+    }
 
     if (!client) {
       return res.status(404).json({
         success: false,
         message: 'No construction project found linked to your account. Please contact administrator.'
       });
+    }
+
+    // Auto-link client.user if not already set
+    if (!client.user) {
+      client.user = userId;
+      await client.save().catch(() => {});
     }
 
     // Populate categories and services
@@ -1269,53 +1283,67 @@ exports.addSiteMedia = async (req, res) => {
       });
     }
 
-    let mediaUrl = '';
-    let mediaType = 'image';
-
-    const uploadedFile = req.files && (req.files.mediaFile || req.files.media || req.files.file)
-      ? (req.files.mediaFile || req.files.media || req.files.file)[0]
-      : req.file;
-
-    if (uploadedFile) {
-      mediaUrl = publicUploadPath('site-media', uploadedFile.filename);
-      if (uploadedFile.mimetype && uploadedFile.mimetype.startsWith('video/')) {
-        mediaType = 'video';
-      }
-    } else if (req.body.url || req.body.mediaUrl) {
-      mediaUrl = req.body.url || req.body.mediaUrl;
-      if (req.body.mediaType) {
-        mediaType = req.body.mediaType;
-      }
+    const uploadedFiles = [];
+    if (req.files) {
+      Object.values(req.files).forEach((arr) => {
+        if (Array.isArray(arr)) {
+          uploadedFiles.push(...arr);
+        }
+      });
+    } else if (req.file) {
+      uploadedFiles.push(req.file);
     }
 
-    if (!mediaUrl) {
+    if (!client.siteMedia) {
+      client.siteMedia = [];
+    }
+
+    const addedItems = [];
+
+    if (uploadedFiles.length > 0) {
+      for (const f of uploadedFiles) {
+        const mediaUrl = publicUploadPath('site-media', f.filename);
+        const isVideo = f.mimetype && f.mimetype.startsWith('video/');
+        const mediaType = isVideo ? 'video' : (req.body.mediaType || 'image');
+        const item = {
+          url: mediaUrl,
+          mediaType,
+          title: (req.body.title || f.originalname.replace(/\.[^/.]+$/, '')).trim(),
+          stepTitle: (req.body.stepTitle || '').trim(),
+          caption: (req.body.caption || '').trim(),
+          uploadedBy: req.user ? req.user.id : undefined,
+          createdAt: new Date()
+        };
+        client.siteMedia.push(item);
+        addedItems.push(item);
+      }
+    } else if (req.body.url || req.body.mediaUrl) {
+      const mediaUrl = req.body.url || req.body.mediaUrl;
+      const mediaType = req.body.mediaType || 'image';
+      const item = {
+        url: mediaUrl,
+        mediaType,
+        title: (req.body.title || '').trim(),
+        stepTitle: (req.body.stepTitle || '').trim(),
+        caption: (req.body.caption || '').trim(),
+        uploadedBy: req.user ? req.user.id : undefined,
+        createdAt: new Date()
+      };
+      client.siteMedia.push(item);
+      addedItems.push(item);
+    } else {
       return res.status(400).json({
         success: false,
         message: 'Please provide an image or video file to upload'
       });
     }
 
-    const newMedia = {
-      url: mediaUrl,
-      mediaType: req.body.mediaType || mediaType,
-      title: (req.body.title || '').trim(),
-      stepTitle: (req.body.stepTitle || '').trim(),
-      caption: (req.body.caption || '').trim(),
-      uploadedBy: req.user ? req.user.id : undefined,
-      createdAt: new Date()
-    };
-
-    if (!client.siteMedia) {
-      client.siteMedia = [];
-    }
-
-    client.siteMedia.push(newMedia);
     await client.save();
 
     res.status(201).json({
       success: true,
-      message: 'Site media uploaded successfully',
-      data: client.siteMedia[client.siteMedia.length - 1],
+      message: `${addedItems.length} site media file(s) uploaded successfully`,
+      data: addedItems.length === 1 ? addedItems[0] : addedItems,
       siteMedia: client.siteMedia
     });
   } catch (error) {

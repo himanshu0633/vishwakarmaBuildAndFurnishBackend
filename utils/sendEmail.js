@@ -331,11 +331,9 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
             <!-- Dual Language Action Buttons -->
             <div style="text-align: center; margin-top: 20px;">
               <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #b45309 100%); color: #ffffff; padding: 12px 24px; border-radius: 6px; font-weight: 800; font-size: 14px; text-decoration: none; margin: 4px; box-shadow: 0 4px 12px rgba(212,175,55,0.35);">
-                🔑 Login to Client Portal (English) &rarr;
+                🔑 Login to Client Portal;
               </a>
-              <a href="${portalUrl}" style="display: inline-block; background: #0f172a; border: 1.5px solid #d4af37; color: #facc15; padding: 11px 22px; border-radius: 6px; font-weight: 700; font-size: 14px; text-decoration: none; margin: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
-                🏗️ पोर्टल पर लॉगिन करें (Hinglish) &rarr;
-              </a>
+         
             </div>
           </div>
 
