@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const inquirySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   // Service fields
   serviceId: {
     type: String,
@@ -20,11 +25,6 @@ const inquirySchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  inquiryType: {
-  type: String,
-  enum: ['service', 'tender', 'general'],
-  required: true
-},
   // Common fields
   categoryName: {
     type: String,

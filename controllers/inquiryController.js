@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const Inquiry = require('../models/Inquiry');
 const Service = require('../models/Service');
 const Category = require('../models/Category');
@@ -6,7 +8,28 @@ const { sendInquiryEmail } = require('../utils/sendEmail');
 // Create new inquiry
 exports.createInquiry = async (req, res) => {
   try {
-    const { serviceId, tenderId, customerName, phone, email, address, message, serviceName: requestedService, categoryName: requestedCategory } = req.body;
+    const { serviceId, tenderId, customerName, name, phone, email, address, message, serviceName: requestedService, service: directService, categoryName: requestedCategory, category: directCategory } = req.body;
+
+    let userId = req.user?.id || req.body.userId || null;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && decoded.id) {
+          userId = decoded.id;
+        }
+      } catch (e) {
+        // ignore invalid token for optional auth
+      }
+    }
+
+    const finalCustomerName = (customerName || name || '').trim();
+    const finalPhone = (phone || '').toString().replace(/\D/g, '').slice(-10);
+    const finalEmail = (email || '').trim();
+    const finalAddress = (address || 'Not provided').trim();
+    const finalMessage = (message || '').trim();
+    const finalServiceName = requestedService || directService || 'General Quote';
+    const finalCategoryName = requestedCategory || directCategory || 'General Quote';
 
     let serviceName = null;
     let tenderTitle = null;
@@ -27,16 +50,17 @@ exports.createInquiry = async (req, res) => {
       categoryName = service.categoryId ? service.categoryId.name : "No Category";
 
       const inquiry = await Inquiry.create({
+        userId,
         serviceId,
         serviceName,
         tenderId: null,
         tenderTitle: null,
         categoryName,
-        customerName,
-        phone,
-        email,
-        address,
-        message: message || '',
+        customerName: finalCustomerName,
+        phone: finalPhone,
+        email: finalEmail,
+        address: finalAddress,
+        message: finalMessage,
         inquiryType: 'service',
         ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
@@ -71,16 +95,17 @@ exports.createInquiry = async (req, res) => {
       categoryName = tender.category || "Tender";
 
       const inquiry = await Inquiry.create({
+        userId,
         serviceId: null,
         serviceName: null,
         tenderId,
         tenderTitle,
         categoryName,
-        customerName,
-        phone,
-        email,
-        address,
-        message: message || '',
+        customerName: finalCustomerName,
+        phone: finalPhone,
+        email: finalEmail,
+        address: finalAddress,
+        message: finalMessage,
         inquiryType: 'tender',
         ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
@@ -102,16 +127,17 @@ exports.createInquiry = async (req, res) => {
     // Handle general contact / quote inquiry
     else {
       const inquiry = await Inquiry.create({
+        userId,
         serviceId: null,
-        serviceName: requestedService || 'General Quote',
+        serviceName: finalServiceName,
         tenderId: null,
         tenderTitle: null,
-        categoryName: requestedCategory || 'Contact',
-        customerName,
-        phone,
-        email: email || '',
-        address: address || 'Not provided',
-        message: message || '',
+        categoryName: finalCategoryName,
+        customerName: finalCustomerName,
+        phone: finalPhone,
+        email: finalEmail,
+        address: finalAddress,
+        message: finalMessage,
         inquiryType: 'general',
         ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
@@ -184,9 +210,84 @@ exports.getAllInquiries = async (req, res) => {
   }
 };
 
+// Get logged-in user's inquiries & quotes
+exports.getMyInquiries = async (req, res) => {
+  try {
+    const currentUserId = req.user?.id;
+    if (!currentUserId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findById(currentUserId).lean();
+
+    const orConditions = [{ userId: currentUserId }];
+
+    if (user?.mobile) {
+      const cleanPhone = user.mobile.toString().replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length === 10) {
+        orConditions.push({ phone: cleanPhone });
+      }
+    }
+
+    if (user?.email) {
+      const cleanEmail = user.email.toLowerCase().trim();
+      if (cleanEmail) {
+        orConditions.push({ email: cleanEmail });
+      }
+    }
+
+    const inquiries = await Inquiry.find({ $or: orConditions })
+      .sort('-createdAt')
+      .lean();
+
+    // Automatically link unassigned inquiries to current user
+    const unlinkedIds = inquiries
+      .filter(item => !item.userId)
+      .map(item => item._id);
+
+    if (unlinkedIds.length > 0) {
+      Inquiry.updateMany(
+        { _id: { $in: unlinkedIds } },
+        { $set: { userId: currentUserId } }
+      ).catch(err => console.error('[getMyInquiries] Error linking user:', err));
+    }
+
+    const formattedInquiries = inquiries.map(item => ({
+      ...item,
+      service: item.serviceName || item.tenderTitle || 'General Inquiry',
+      serviceName: item.serviceName || item.tenderTitle || 'General Inquiry',
+    }));
+
+    res.json({
+      success: true,
+      data: formattedInquiries,
+      inquiries: formattedInquiries,
+      count: formattedInquiries.length
+    });
+  } catch (error) {
+    console.error('Error fetching user inquiries:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching inquiries',
+      error: error.message
+    });
+  }
+};
+
 // Get inquiry by ID (Admin)
 exports.getInquiryById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inquiry not found'
+      });
+    }
+
     const inquiry = await Inquiry.findById(req.params.id);
     if (!inquiry) {
       return res.status(404).json({
