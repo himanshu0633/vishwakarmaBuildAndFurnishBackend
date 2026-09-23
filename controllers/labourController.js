@@ -703,3 +703,35 @@ exports.deleteLabourPayment = async (req, res) => {
     });
   }
 };
+
+// @desc    Get attendance history (all dates, present/absent/half-day) for workers of client
+// @route   GET /api/clients/:id/labour/attendance-history
+exports.getAttendanceHistory = async (req, res) => {
+  try {
+    const { id: clientId } = req.params;
+    const { labourId } = req.query;
+
+    const query = { clientId, isDeleted: { $ne: true } };
+    if (labourId) {
+      query.labourId = labourId;
+    }
+
+    const records = await LabourAttendance.find(query)
+      .populate('labourId', 'name phone role dailyWage')
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: records,
+      records
+    });
+  } catch (error) {
+    console.error('Error fetching attendance history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch attendance history',
+      error: error.message
+    });
+  }
+};

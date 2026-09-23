@@ -126,6 +126,7 @@ router.delete('/:id/labour/:labourId', labourController.deleteLabourer);
 
 // Labour Daily Haziri / Attendance
 router.get('/:id/labour/attendance', labourController.getAttendanceByDate);
+router.get('/:id/labour/attendance-history', labourController.getAttendanceHistory);
 router.post('/:id/labour/attendance', labourController.saveDailyAttendance);
 
 // Labour Wage Payments & WhatsApp Receipt

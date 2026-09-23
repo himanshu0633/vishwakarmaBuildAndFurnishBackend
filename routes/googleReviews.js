@@ -47,7 +47,7 @@ router.get('/api/google-reviews', async (req, res) => {
     });
 
     if (response.data.status !== 'OK') {
-      return res.status(502).json({
+      return res.status(200).json({
         success: false,
         message: response.data.error_message || `Google Places error: ${response.data.status}`,
         data: [],
@@ -75,7 +75,7 @@ router.get('/api/google-reviews', async (req, res) => {
     return res.json(payload);
   } catch (error) {
     console.error('Google reviews fetch failed:', error.message);
-    return res.status(502).json({
+    return res.status(200).json({
       success: false,
       message: 'Unable to fetch Google reviews right now',
       data: [],

@@ -202,7 +202,7 @@ const normalizeServicePayload = (body, categoryName = '', file) => {
   const uploadedImage = file ? publicUploadPath('services', file.filename) : '';
 
   const payload = {
-    categoryId: body.categoryId,
+    categoryId: body.categoryId?._id || body.categoryId,
     name,
     slug: autoFields.slug,
     shortDescription: body.shortDescription || '',
@@ -825,6 +825,26 @@ exports.getAllServices = async (req, res) => {
 
     if (req.query.categoryId) {
       query.categoryId = req.query.categoryId;
+    } else if (req.query.category && req.query.category !== 'All') {
+      const categoryDoc = await Category.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${req.query.category.trim()}$`, 'i') } },
+          { slug: req.query.category.trim().toLowerCase() }
+        ]
+      }).lean();
+      if (categoryDoc) {
+        query.categoryId = categoryDoc._id;
+      }
+    }
+
+    if (req.query.search && req.query.search.trim()) {
+      const sRegex = new RegExp(req.query.search.trim(), 'i');
+      query.$or = [
+        { name: sRegex },
+        { shortDescription: sRegex },
+        { description: sRegex },
+        { tags: sRegex }
+      ];
     }
 
     if (req.query.featured === 'true') {

@@ -127,9 +127,9 @@ router.put('/:id', authMiddleware, upload.single('imageFile'), compressUploadedI
 
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const popup = await Popup.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const popup = await Popup.findByIdAndDelete(req.params.id);
     if (!popup) return res.status(404).json({ success: false, message: 'Popup not found' });
-    res.json({ success: true, data: popup, message: 'Popup deactivated successfully' });
+    res.json({ success: true, data: popup, message: 'Popup deleted successfully' });
   } catch (error) {
     console.error('Error deleting popup:', error);
     res.status(500).json({ success: false, message: 'Error deleting popup', error: error.message });

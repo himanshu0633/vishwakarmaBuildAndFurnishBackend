@@ -39,6 +39,7 @@ const allowedOrigins = [
   'http://localhost:5175',
   'https://vishwakarmabuildandfurnish.in',
   'https://www.vishwakarmabuildandfurnish.in',
+  'https://backend.vishwakarmabuildandfurnish.in',
   'https://vishwakarma-build-and-furnish.vercel.app',
   'https://vishwakarma-build-and-furnish.vercel.app/',
   process.env.FRONTEND_URL,
@@ -47,11 +48,22 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
+    // Mobile apps (React Native), curl, Postman send no origin or null/file://
+    if (
+      !origin ||
+      origin === 'null' ||
+      origin === 'file://' ||
+      origin.startsWith('android-app://') ||
+      origin.startsWith('capacitor://') ||
+      origin.startsWith('http://localhost') ||
+      allowedOrigins.includes(origin) ||
+      /\.vercel\.app$/.test(origin)
+    ) {
       return callback(null, true);
     }
 
-    return callback(new Error('Not allowed by CORS'));
+    // Default to allowing the origin with credentials rather than throwing a 500 error
+    return callback(null, true);
   },
   credentials: true
 }));
@@ -70,6 +82,22 @@ app.use(
   },
   express.static(uploadRoot)
 );
+
+// Fallback lookup across subdirectories if file is requested directly under /uploads/
+const uploadSubDirs = ['clients', 'site-media', 'expenses', 'services', 'gallery', 'tenders', 'partners', 'about', 'popups'];
+const fs = require('fs');
+const path = require('path');
+app.use(['/uploads', '/api/uploads'], (req, res, next) => {
+  const filename = path.basename(req.path);
+  if (!filename) return next();
+  for (const sub of uploadSubDirs) {
+    const candidate = path.join(uploadRoot, sub, filename);
+    if (fs.existsSync(candidate)) {
+      return res.sendFile(candidate);
+    }
+  }
+  next();
+});
 
 // API Routes
 app.use('/api/categories', require('./routes/categories')); // Keep categories route

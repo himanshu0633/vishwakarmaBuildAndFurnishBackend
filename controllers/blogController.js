@@ -33,7 +33,14 @@ const buildSlugCandidates = (value = '') => {
 
 const normalizeList = (value) => {
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value
+      .map((item) => {
+        if (item && typeof item === 'object') {
+          return String(item._id || item.id || '').trim();
+        }
+        return String(item || '').trim();
+      })
+      .filter(Boolean);
   }
 
   if (typeof value === 'string') {
@@ -234,8 +241,10 @@ const normalizeBlogPayload = async (body = {}) => {
   const serviceDocs = relatedServices.length
     ? await Service.find({ _id: { $in: relatedServices } }).populate('categoryId', 'name slug').lean()
     : [];
-  const categoryDoc = body.categoryId
-    ? await Category.findById(body.categoryId).select('name slug').lean()
+  const rawCategoryId = body.categoryId?._id || body.categoryId;
+  const categoryId = rawCategoryId && String(rawCategoryId).match(/^[0-9a-fA-F]{24}$/) ? String(rawCategoryId) : null;
+  const categoryDoc = categoryId
+    ? await Category.findById(categoryId).select('name slug').lean()
     : null;
   const categoryName = categoryDoc?.name || body.category?.trim() || serviceDocs[0]?.categoryId?.name || 'Furniture';
   const manualTags = normalizeList(body.tags);
@@ -261,7 +270,7 @@ const normalizeBlogPayload = async (body = {}) => {
     coverImage: body.coverImage?.trim() || '',
     blogImage: blogImages[0] || body.blogImage?.trim() || '',
     blogImages,
-    categoryId: body.categoryId || categoryDoc?._id || serviceDocs[0]?.categoryId?._id || undefined,
+    categoryId: categoryId || categoryDoc?._id || serviceDocs[0]?.categoryId?._id || undefined,
     category: categoryName,
     relatedServices,
     seoTitle,

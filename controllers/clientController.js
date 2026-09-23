@@ -632,7 +632,23 @@ exports.updateClientMilestones = async (req, res) => {
           // If all points in step completed, auto-mark step completed
           const allPointsDone = step.points.every((p) => p.completed);
           step.completed = allPointsDone;
+          step.status = allPointsDone ? 'completed' : (step.points.some(p => p.completed) ? 'in_progress' : 'pending');
           step.completedAt = allPointsDone ? new Date() : undefined;
+        }
+      }
+    } else if (req.body.toggleStep) {
+      // Option A2: Quick toggle entire step
+      const { stepId, completed } = req.body.toggleStep;
+      const step = client.steps.id(stepId);
+      if (step) {
+        step.completed = completed;
+        step.status = completed ? 'completed' : 'in_progress';
+        step.completedAt = completed ? new Date() : undefined;
+        if (step.points && step.points.length > 0) {
+          step.points.forEach((p) => {
+            p.completed = completed;
+            p.completedAt = completed ? new Date() : undefined;
+          });
         }
       }
     } else if (req.body.addPoint) {
@@ -900,8 +916,8 @@ exports.addClientExpense = async (req, res) => {
       });
     }
 
+    const expenseType = req.body.expenseType || req.body.type || 'material';
     const {
-      expenseType = 'material',
       materialId,
       materialName,
       category,
