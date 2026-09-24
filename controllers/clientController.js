@@ -211,7 +211,8 @@ exports.getClientById = async (req, res) => {
       data: {
         client: {
           ...client.toObject(),
-          progressPercentage: client.progressPercentage
+          progressPercentage: client.progressPercentage,
+          progress: client.progressPercentage
         },
         financials: {
           contractAmount: client.contractAmount || 0,
@@ -247,9 +248,11 @@ exports.createClient = async (req, res) => {
     const {
       name,
       phone,
+      mobile,
       email,
       location,
       aadharNo,
+      aadharCardNumber,
       categories,
       services,
       serviceRate,
@@ -261,8 +264,11 @@ exports.createClient = async (req, res) => {
       steps,
       notes
     } = req.body;
+    const clientPhone = (phone || mobile || '').trim();
+    const clientAadharNo = (aadharNo || aadharCardNumber || '').trim();
+    const clientLocation = (location || '').trim();
 
-    if (!name || !phone || !location || contractAmount === undefined) {
+    if (!name || !clientPhone || !clientLocation || contractAmount === undefined) {
       return res.status(400).json({
         success: false,
         message: 'Name, Phone, Location and Contract Amount are required'
@@ -316,10 +322,10 @@ exports.createClient = async (req, res) => {
     }
 
     // Guard against rapid duplicate clicks / double submission (within last 7 seconds)
-    if (phone || email) {
+    if (clientPhone || email) {
       const recentClient = await Client.findOne({
         $or: [
-          ...(phone ? [{ phone: phone.trim() }] : []),
+          ...(clientPhone ? [{ phone: clientPhone }] : []),
           ...(email ? [{ email: email.trim().toLowerCase() }] : [])
         ],
         createdAt: { $gte: new Date(Date.now() - 7000) }
@@ -336,10 +342,10 @@ exports.createClient = async (req, res) => {
 
     const client = await Client.create({
       name: name.trim(),
-      phone: phone.trim(),
+      phone: clientPhone,
       email: (email || '').trim().toLowerCase(),
-      location: location.trim(),
-      aadharNo: (aadharNo || '').trim(),
+      location: clientLocation,
+      aadharNo: clientAadharNo,
       categories: parsedCategories,
       services: parsedServices,
       serviceRate: Number(serviceRate) || 0,
@@ -678,7 +684,8 @@ exports.updateClientMilestones = async (req, res) => {
       success: true,
       message: 'Milestones updated successfully',
       data: client.steps,
-      progressPercentage: client.progressPercentage
+      progressPercentage: client.progressPercentage,
+      progress: client.progressPercentage
     });
   } catch (error) {
     console.error('Error updating milestones:', error);
@@ -749,12 +756,27 @@ exports.addClientPayment = async (req, res) => {
       }
     }
 
+    let cleanPaymentMode = (paymentMode || 'Cash').trim();
+    if (/bank\s*transfer/i.test(cleanPaymentMode) || /neft|rtgs|imps/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Bank Transfer (NEFT/RTGS)';
+    } else if (/upi|online/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'UPI / Online';
+    } else if (/cheque|check/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cheque';
+    } else if (/credit|udhaar/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Credit / Udhaar';
+    } else if (/cash/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cash';
+    }
+
+    const paymentDate = date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date();
+
     const payment = await ClientPayment.create({
       clientId: client._id,
       receiptNo,
       amount: Number(amount),
-      date: date ? new Date(date) : new Date(),
-      paymentMode: paymentMode || 'Cash',
+      date: paymentDate,
+      paymentMode: cleanPaymentMode,
       transactionRef: (transactionRef || '').trim(),
       stepId: stepId || undefined,
       stepTitle,
@@ -796,7 +818,7 @@ exports.addClientPayment = async (req, res) => {
     console.error('Error adding client payment:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to record payment',
+      message: error.message || 'Failed to record payment',
       error: error.message
     });
   }
@@ -1001,6 +1023,21 @@ exports.addClientExpense = async (req, res) => {
       });
     }
 
+    let cleanPaymentMode = (paymentMode || 'Cash').trim();
+    if (/bank\s*transfer/i.test(cleanPaymentMode) || /neft|rtgs|imps/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Bank Transfer';
+    } else if (/upi|online/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'UPI / Online';
+    } else if (/cheque|check/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cheque';
+    } else if (/credit|udhaar/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Credit / Udhaar';
+    } else if (/cash/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cash';
+    }
+
+    const expenseDate = date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date();
+
     const expense = await ClientExpense.create({
       clientId: client._id,
       expenseType,
@@ -1017,8 +1054,8 @@ exports.addClientExpense = async (req, res) => {
       vehicleNo: (vehicleNo || '').trim(),
       title: (title || '').trim(),
       totalAmount: calculatedTotal,
-      date: date ? new Date(date) : new Date(),
-      paymentMode: paymentMode || 'Cash',
+      date: expenseDate,
+      paymentMode: cleanPaymentMode,
       note: (note || '').trim(),
       billImage
     });
@@ -1032,7 +1069,7 @@ exports.addClientExpense = async (req, res) => {
     console.error('Error adding client expense:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to add expense',
+      message: error.message || 'Failed to add expense',
       error: error.message
     });
   }
@@ -1405,5 +1442,4 @@ exports.deleteSiteMedia = async (req, res) => {
     });
   }
 };
-
 

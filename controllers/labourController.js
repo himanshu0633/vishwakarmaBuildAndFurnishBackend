@@ -584,14 +584,27 @@ exports.addLabourPayment = async (req, res) => {
       });
     }
 
-    const paymentDate = date ? new Date(date) : new Date();
+    let cleanPaymentMode = (paymentMode || 'Cash').trim();
+    if (/bank\s*transfer/i.test(cleanPaymentMode) || /neft|rtgs|imps/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Bank Transfer';
+    } else if (/upi|online/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'UPI / Online';
+    } else if (/cheque|check/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cheque';
+    } else if (/credit|udhaar/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Credit / Udhaar';
+    } else if (/cash/i.test(cleanPaymentMode)) {
+      cleanPaymentMode = 'Cash';
+    }
+
+    const paymentDate = date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date();
 
     const payment = await LabourPayment.create({
       clientId,
       labourId,
       amount: numAmount,
       date: paymentDate,
-      paymentMode: paymentMode || 'Cash',
+      paymentMode: cleanPaymentMode,
       transactionRef: transactionRef || '',
       notes: notes || ''
     });

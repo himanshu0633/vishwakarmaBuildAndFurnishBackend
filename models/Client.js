@@ -137,7 +137,7 @@ const clientSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'in_progress', 'completed', 'on_hold'],
+    enum: ['active', 'planning', 'in_progress', 'completed', 'on_hold'],
     default: 'active'
   },
   startDate: {
@@ -195,6 +195,11 @@ clientSchema.virtual('progressPercentage').get(function () {
 
   if (totalPoints === 0) return 0;
   return Math.round((completedPoints / totalPoints) * 100);
+});
+
+// Alias for progress
+clientSchema.virtual('progress').get(function () {
+  return this.progressPercentage;
 });
 
 clientSchema.set('toJSON', { virtuals: true });

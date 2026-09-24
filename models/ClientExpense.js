@@ -90,7 +90,17 @@ const clientExpenseSchema = new mongoose.Schema({
   },
   paymentMode: {
     type: String,
-    enum: ['Cash', 'UPI / Online', 'Bank Transfer', 'Cheque', 'Credit / Udhaar', 'Other'],
+    enum: [
+      'Cash',
+      'UPI / Online',
+      'UPI',
+      'Bank Transfer',
+      'Bank Transfer / NEFT',
+      'Bank Transfer (NEFT/RTGS)',
+      'Cheque',
+      'Credit / Udhaar',
+      'Other'
+    ],
     default: 'Cash'
   },
   note: {
