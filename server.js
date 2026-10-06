@@ -109,6 +109,7 @@ app.use('/api/gallery', require('./routes/gallery')); // Gallery routes
 app.use('/api/about-content', require('./routes/aboutContent'));
 app.use('/api/inquiries', require('./routes/inquiries')); // Keep inquiries route
 app.use('/api/auth', require('./routes/auth')); // Auth routes
+app.use('/auth', require('./routes/auth')); // Auth fallback for proxies that strip /api
 app.use('/api/tenders', require('./routes/tenderRoutes')); // Tender routes with PDF upload
 app.use('/api/partners', require('./routes/partners'));
 app.use('/api/marketplace', require('./routes/marketplace'));
