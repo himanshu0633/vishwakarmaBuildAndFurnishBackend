@@ -81,6 +81,115 @@ const siteMediaSchema = new mongoose.Schema({
   }
 });
 
+const extraWorkSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  cost: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  stepTitle: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  sendToClient: {
+    type: Boolean,
+    default: true
+  },
+  status: {
+    type: String,
+    enum: ['pending_approval', 'approved', 'rejected', 'draft'],
+    default: 'pending_approval'
+  },
+  clientResponseNote: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  clientRespondedAt: {
+    type: Date
+  },
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const snagItemSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  imageSource: {
+    type: String,
+    enum: ['existing_site_media', 'gallery_upload', 'camera_capture', 'none'],
+    default: 'none'
+  },
+  imageUrl: {
+    type: String,
+    default: ''
+  },
+  voiceNoteUrl: {
+    type: String,
+    default: ''
+  },
+  voiceDurationSeconds: {
+    type: Number,
+    default: 0
+  },
+  stepTitle: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'in_progress', 'resolved'],
+    default: 'pending'
+  },
+  resolutionNote: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  resolvedAt: {
+    type: Date
+  },
+  resolvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  createdBy: {
+    type: String,
+    enum: ['client', 'admin'],
+    default: 'client'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const clientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -169,7 +278,9 @@ const clientSchema = new mongoose.Schema({
   deletedAt: {
     type: Date
   },
-  siteMedia: [siteMediaSchema]
+  siteMedia: [siteMediaSchema],
+  extraWorks: [extraWorkSchema],
+  snags: [snagItemSchema]
 }, {
   timestamps: true
 });
@@ -200,6 +311,21 @@ clientSchema.virtual('progressPercentage').get(function () {
 // Alias for progress
 clientSchema.virtual('progress').get(function () {
   return this.progressPercentage;
+});
+
+// Total approved extra work cost
+clientSchema.virtual('totalExtraCost').get(function () {
+  if (!this.extraWorks || this.extraWorks.length === 0) return 0;
+  return this.extraWorks
+    .filter((w) => w.status === 'approved')
+    .reduce((sum, w) => sum + (Number(w.cost) || 0), 0);
+});
+
+// Revised total contract amount including approved extra works
+clientSchema.virtual('revisedContractAmount').get(function () {
+  const base = Number(this.contractAmount) || 0;
+  const extra = this.totalExtraCost || 0;
+  return base + extra;
 });
 
 clientSchema.set('toJSON', { virtuals: true });

@@ -134,5 +134,55 @@ router.get('/:id/labour/payments', labourController.getLabourPayments);
 router.post('/:id/labour/payments', labourController.addLabourPayment);
 router.delete('/:id/labour/payments/:paymentId', labourController.deleteLabourPayment);
 
+// Multer storage for snags (photos and audio voice notes)
+const snagStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, ensureUploadDir('snags'));
+  },
+  filename(req, file, cb) {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    let ext = path.extname(file.originalname).toLowerCase();
+    if (!ext) {
+      if (file.mimetype.startsWith('audio/')) ext = '.webm';
+      else if (file.mimetype.startsWith('image/')) ext = '.jpg';
+      else ext = '.bin';
+    }
+    const prefix = file.fieldname === 'voiceNote' ? 'voice' : 'snag';
+    cb(null, `${prefix}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const snagFilter = (req, file, cb) => {
+  if (
+    file.mimetype.startsWith('image/') ||
+    file.mimetype.startsWith('audio/') ||
+    file.mimetype === 'video/webm'
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image and audio files are allowed for snag reports'), false);
+  }
+};
+
+const snagUpload = multer({
+  storage: snagStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: snagFilter
+}).fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'voiceNote', maxCount: 1 }
+]);
+
+// Extra Work / Change Order Variations
+router.post('/:id/extra-work', clientController.addExtraWork);
+router.put('/:id/extra-work/:workId', clientController.updateExtraWork);
+router.delete('/:id/extra-work/:workId', clientController.deleteExtraWork);
+router.put('/:id/extra-work/:workId/respond', clientController.respondExtraWork);
+
+// Snag List & Issues Tracking
+router.post('/:id/snags', snagUpload, clientController.addSnag);
+router.put('/:id/snags/:snagId/resolve', clientController.resolveSnag);
+router.delete('/:id/snags/:snagId', clientController.deleteSnag);
+
 module.exports = router;
 

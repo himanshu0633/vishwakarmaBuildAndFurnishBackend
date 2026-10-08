@@ -167,7 +167,12 @@ exports.getClientById = async (req, res) => {
     // Fetch active payments
     const payments = await ClientPayment.find({ clientId: client._id, isDeleted: { $ne: true } }).sort({ date: -1, createdAt: -1 });
     const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const remainingBalance = Math.max(0, (client.contractAmount || 0) - totalPaid);
+    const extraWorks = client.extraWorks || [];
+    const totalApprovedExtraCost = extraWorks
+      .filter((w) => w.status === 'approved')
+      .reduce((sum, w) => sum + (Number(w.cost) || 0), 0);
+    const revisedContractAmount = (client.contractAmount || 0) + totalApprovedExtraCost;
+    const remainingBalance = Math.max(0, revisedContractAmount - totalPaid);
 
     // Fetch active expenses
     const { materialId } = req.query;
@@ -216,6 +221,8 @@ exports.getClientById = async (req, res) => {
         },
         financials: {
           contractAmount: client.contractAmount || 0,
+          totalApprovedExtraCost,
+          revisedContractAmount,
           totalPaid,
           remainingBalance,
           materialExpensesTotal,
@@ -228,7 +235,10 @@ exports.getClientById = async (req, res) => {
         },
         payments,
         expenses: filteredExpenses,
-        allExpensesCount: allExpenses.length
+        allExpensesCount: allExpenses.length,
+        extraWorks: client.extraWorks || [],
+        snags: client.snags || [],
+        siteMedia: client.siteMedia || []
       }
     });
   } catch (error) {
@@ -1278,7 +1288,12 @@ exports.getMyClientProject = async (req, res) => {
     // Fetch active payments
     const payments = await ClientPayment.find({ clientId: client._id, isDeleted: { $ne: true } }).sort({ date: -1, createdAt: -1 });
     const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const remainingBalance = Math.max(0, (client.contractAmount || 0) - totalPaid);
+    const extraWorks = client.extraWorks || [];
+    const totalApprovedExtraCost = extraWorks
+      .filter((w) => w.status === 'approved')
+      .reduce((sum, w) => sum + (Number(w.cost) || 0), 0);
+    const revisedContractAmount = (client.contractAmount || 0) + totalApprovedExtraCost;
+    const remainingBalance = Math.max(0, revisedContractAmount - totalPaid);
 
     // Fetch active expenses / materials
     const allExpenses = await ClientExpense.find({ clientId: client._id, isDeleted: { $ne: true } }).sort({ date: -1 });
@@ -1303,6 +1318,8 @@ exports.getMyClientProject = async (req, res) => {
         },
         financials: {
           contractAmount: client.contractAmount || 0,
+          totalApprovedExtraCost,
+          revisedContractAmount,
           serviceRate: client.serviceRate || 0,
           serviceRateUnit: client.serviceRateUnit || '',
           totalPaid,
@@ -1311,6 +1328,9 @@ exports.getMyClientProject = async (req, res) => {
         },
         steps: client.steps || [],
         payments,
+        extraWorks: client.extraWorks || [],
+        snags: client.snags || [],
+        siteMedia: client.siteMedia || [],
         materialDeliveries: materialExpenses,
         materialSummary
       }
@@ -1444,4 +1464,297 @@ exports.deleteSiteMedia = async (req, res) => {
     });
   }
 };
+
+// ==========================================
+// EXTRA WORK / VARIATIONS & CHANGE ORDERS
+// ==========================================
+
+// @desc    Add extra work / change order
+// @route   POST /api/clients/:id/extra-work
+// @access  Private (Admin)
+exports.addExtraWork = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const { title, description, cost, stepTitle, sendToClient } = req.body;
+    if (!title || cost === undefined || cost === null || cost === '') {
+      return res.status(400).json({ success: false, message: 'Title and cost are required for extra work' });
+    }
+
+    const parsedCost = Number(cost);
+    if (isNaN(parsedCost) || parsedCost < 0) {
+      return res.status(400).json({ success: false, message: 'Valid cost amount is required' });
+    }
+
+    const isSendToClient = sendToClient === true || sendToClient === 'true';
+
+    const newExtraWork = {
+      title: title.trim(),
+      description: (description || '').trim(),
+      cost: parsedCost,
+      stepTitle: (stepTitle || '').trim(),
+      sendToClient: isSendToClient,
+      status: isSendToClient ? 'pending_approval' : 'approved',
+      requestedBy: req.user ? req.user.id : undefined,
+      createdAt: new Date()
+    };
+
+    if (!client.extraWorks) client.extraWorks = [];
+    client.extraWorks.unshift(newExtraWork);
+    await client.save();
+
+    res.status(201).json({
+      success: true,
+      message: isSendToClient
+        ? 'Extra work added and approval request sent to client'
+        : 'Extra work added and approved directly',
+      data: client.extraWorks[0],
+      extraWorks: client.extraWorks
+    });
+  } catch (error) {
+    console.error('Error adding extra work:', error);
+    res.status(500).json({ success: false, message: 'Failed to add extra work', error: error.message });
+  }
+};
+
+// @desc    Update extra work item
+// @route   PUT /api/clients/:id/extra-work/:workId
+// @access  Private (Admin)
+exports.updateExtraWork = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const work = (client.extraWorks || []).id(req.params.workId);
+    if (!work) {
+      return res.status(404).json({ success: false, message: 'Extra work item not found' });
+    }
+
+    const { title, description, cost, stepTitle, sendToClient, status } = req.body;
+    if (title !== undefined) work.title = title.trim();
+    if (description !== undefined) work.description = (description || '').trim();
+    if (cost !== undefined && !isNaN(Number(cost))) work.cost = Number(cost);
+    if (stepTitle !== undefined) work.stepTitle = (stepTitle || '').trim();
+    if (sendToClient !== undefined) work.sendToClient = sendToClient === true || sendToClient === 'true';
+    if (status && ['pending_approval', 'approved', 'rejected', 'draft'].includes(status)) {
+      work.status = status;
+    }
+
+    await client.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Extra work updated successfully',
+      data: work,
+      extraWorks: client.extraWorks
+    });
+  } catch (error) {
+    console.error('Error updating extra work:', error);
+    res.status(500).json({ success: false, message: 'Failed to update extra work', error: error.message });
+  }
+};
+
+// @desc    Delete extra work item
+// @route   DELETE /api/clients/:id/extra-work/:workId
+// @access  Private (Admin)
+exports.deleteExtraWork = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    client.extraWorks = (client.extraWorks || []).filter(
+      (w) => w._id.toString() !== req.params.workId
+    );
+
+    await client.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Extra work item deleted successfully',
+      extraWorks: client.extraWorks
+    });
+  } catch (error) {
+    console.error('Error deleting extra work:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete extra work', error: error.message });
+  }
+};
+
+// @desc    Client responds (Approve / Reject) to extra work
+// @route   PUT /api/clients/:id/extra-work/:workId/respond
+// @access  Private (Client / Admin)
+exports.respondExtraWork = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const work = (client.extraWorks || []).id(req.params.workId);
+    if (!work) {
+      return res.status(404).json({ success: false, message: 'Extra work item not found' });
+    }
+
+    const { status, clientResponseNote } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status must be approved or rejected' });
+    }
+
+    work.status = status;
+    if (clientResponseNote !== undefined) {
+      work.clientResponseNote = clientResponseNote.trim();
+    }
+    work.clientRespondedAt = new Date();
+
+    await client.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Extra work request ${status === 'approved' ? 'approved' : 'rejected'} successfully`,
+      data: work,
+      extraWorks: client.extraWorks
+    });
+  } catch (error) {
+    console.error('Error responding to extra work:', error);
+    res.status(500).json({ success: false, message: 'Failed to respond to extra work', error: error.message });
+  }
+};
+
+// ==========================================
+// SNAG LIST / DEFECT & FEEDBACK TRACKER
+// ==========================================
+
+// @desc    Add snag issue (Photo + Audio Note + Description)
+// @route   POST /api/clients/:id/snags
+// @access  Private (Client / Admin)
+exports.addSnag = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const { title, description, stepTitle, imageSource, voiceDurationSeconds, createdBy } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Issue title is required' });
+    }
+
+    let imageUrl = (req.body.imageUrl || '').trim();
+    let voiceNoteUrl = '';
+
+    // Handle uploaded image if provided
+    if (req.files && req.files.image && req.files.image[0]) {
+      imageUrl = publicUploadPath('snags', req.files.image[0].filename);
+    }
+
+    // Handle uploaded audio/voice note if provided
+    if (req.files && req.files.voiceNote && req.files.voiceNote[0]) {
+      voiceNoteUrl = publicUploadPath('snags', req.files.voiceNote[0].filename);
+    }
+
+    const validImageSource = ['existing_site_media', 'gallery_upload', 'camera_capture', 'none'].includes(imageSource)
+      ? imageSource
+      : (imageUrl ? 'gallery_upload' : 'none');
+
+    const snagItem = {
+      title: title.trim(),
+      description: (description || '').trim(),
+      imageSource: validImageSource,
+      imageUrl,
+      voiceNoteUrl,
+      voiceDurationSeconds: Number(voiceDurationSeconds) || 0,
+      stepTitle: (stepTitle || '').trim(),
+      status: 'pending',
+      createdBy: createdBy || (req.user?.role === 'admin' ? 'admin' : 'client'),
+      createdAt: new Date()
+    };
+
+    if (!client.snags) client.snags = [];
+    client.snags.unshift(snagItem);
+    await client.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Issue reported successfully! Our team will inspect and resolve it.',
+      data: client.snags[0],
+      snags: client.snags
+    });
+  } catch (error) {
+    console.error('Error adding snag:', error);
+    res.status(500).json({ success: false, message: 'Failed to record issue', error: error.message });
+  }
+};
+
+// @desc    Admin resolves snag issue
+// @route   PUT /api/clients/:id/snags/:snagId/resolve
+// @access  Private (Admin)
+exports.resolveSnag = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const snag = (client.snags || []).id(req.params.snagId);
+    if (!snag) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    const { status, resolutionNote } = req.body;
+    snag.status = status || 'resolved';
+    if (resolutionNote !== undefined) {
+      snag.resolutionNote = resolutionNote.trim();
+    }
+    if (snag.status === 'resolved') {
+      snag.resolvedAt = new Date();
+      snag.resolvedBy = req.user ? req.user.id : undefined;
+    }
+
+    await client.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Issue marked as ${snag.status}`,
+      data: snag,
+      snags: client.snags
+    });
+  } catch (error) {
+    console.error('Error resolving snag:', error);
+    res.status(500).json({ success: false, message: 'Failed to resolve issue', error: error.message });
+  }
+};
+
+// @desc    Delete snag issue
+// @route   DELETE /api/clients/:id/snags/:snagId
+// @access  Private (Admin)
+exports.deleteSnag = async (req, res) => {
+  try {
+    const client = await Client.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    client.snags = (client.snags || []).filter(
+      (s) => s._id.toString() !== req.params.snagId
+    );
+
+    await client.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Issue deleted successfully',
+      snags: client.snags
+    });
+  } catch (error) {
+    console.error('Error deleting snag:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete issue', error: error.message });
+  }
+};
+
 
