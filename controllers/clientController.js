@@ -399,10 +399,12 @@ exports.createClient = async (req, res) => {
         client.loginPassword = clientPassword;
         await client.save();
 
-        welcomeEmailSent = await sendClientWelcomeEmail({
-          client,
-          loginPassword: clientPassword
-        });
+        if (client.status !== 'draft') {
+          welcomeEmailSent = await sendClientWelcomeEmail({
+            client,
+            loginPassword: clientPassword
+          });
+        }
       } catch (err) {
         console.error('Error creating user account or sending welcome email for client:', err);
       }

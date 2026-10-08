@@ -231,7 +231,7 @@ const sendPaymentReceiptEmail = async ({ client, payment, totalPaid, remainingBa
   }
 };
 
-const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
+const sendClientWelcomeEmail = async ({ client, loginPassword, appDownloadUrl }) => {
   try {
     if (!client?.email) {
       console.log('ℹ️ Client has no email. Skipping welcome credentials email.');
@@ -240,7 +240,7 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
 
     const smtpUser = process.env.SMTP_USER || 'vishwakarmabuildandfurnish@gmail.com';
     const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
-    const portalUrl = loginUrl || process.env.CLIENT_PORTAL_URL || 'https://vishwakarmabuildandfurnish.in/loginuser';
+    const appUrl = appDownloadUrl || process.env.APP_PLAY_STORE_URL || 'https://play.google.com/store/apps/details?id=com.vishwakarmaapp';
 
     if (!smtpPass) {
       console.warn('⚠️ SMTP_PASS is not configured in .env. Skipping welcome email notification.');
@@ -248,7 +248,7 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
         client: client.name,
         email: client.email,
         password: loginPassword,
-        portalUrl
+        appUrl
       });
       return false;
     }
@@ -264,9 +264,9 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
     const mailOptions = {
       from: `"Vishwakarma Build & Furnish" <${smtpUser}>`,
       to: client.email,
-      subject: `Your Client Portal Account is Ready - Vishwakarma Build & Furnish`,
+      subject: `Download Vishwakarma App - Your Project Tracking Account is Ready`,
       html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; border: 1.5px solid #d4af37; border-radius: 12px; max-width: 600px; background-color: #ffffff; color: #1e293b;">
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; border: 1.5px solid #d4af37; border-radius: 12px; max-width: 600px; background-color: #ffffff; color: #1e293b; margin: 0 auto;">
           <!-- Header -->
           <div style="text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 16px; margin-bottom: 20px;">
             <h1 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">
@@ -280,66 +280,70 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, loginUrl }) => {
             </p>
           </div>
 
-          <!-- Greeting (English & Hinglish) -->
+          <!-- Greeting (English & Hindi) -->
           <div style="background-color: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
             <p style="margin: 0; font-size: 16px; color: #854d0e; font-weight: 700;">
               Welcome <strong>${client.name}</strong> / नमस्ते <strong>${client.name}</strong> जी,
             </p>
             <p style="margin: 6px 0 0 0; font-size: 14px; color: #713f12; line-height: 1.5;">
-              Welcome to <strong>Vishwakarma Build & Furnish</strong>! Your live construction project tracking portal account has been created successfully.
+              Welcome to <strong>Vishwakarma Build & Furnish</strong>! Your live construction project tracking account has been created. Please download our official Android App from Google Play Store to track your project live.
               <br/><br/>
-              <span style="font-size: 13.5px; color: #854d0e;">(Vishwakarma Build & Furnish पर आपका स्वागत है! आपके प्रोजेक्ट का लाइव ट्रैकिंग पोर्टल अकाउंट एक्टिवेट कर दिया गया है।)</span>
+              <span style="font-size: 13.5px; color: #854d0e;">(Vishwakarma Build & Furnish पर आपका स्वागत है! आपके प्रोजेक्ट का लाइव ट्रैकिंग अकाउंट एक्टिवेट कर दिया गया है। अपने प्रोजेक्ट की लाइव प्रोग्रेस और हिसाब-किताब देखने के लिए नीचे दिए गए लिंक से Vishwakarma App डाउनलोड करें।)</span>
             </p>
           </div>
 
-          <!-- Project Portal Description -->
+          <!-- App Features Description -->
           <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 14px;">
-            Log in to the portal to view live site progress and project accounts anytime:
+            Download the official Android app to view live site progress and project accounts anytime:
             <br/>
-            <span style="font-size: 13px; color: #64748b;">(पोर्टल पर लॉगिन करके आप अपने साइट की लाइव प्रोग्रेस और हिसाब-किताब कभी भी देख सकते हैं:)</span>
+            <span style="font-size: 13px; color: #64748b;">(ऐप में लॉगिन करके आप अपने मकान के काम की लाइव प्रोग्रेस और हिसाब-किताब कभी भी देख सकते हैं:)</span>
           </p>
           <ul style="font-size: 13.5px; color: #475569; line-height: 1.8; margin-bottom: 22px; padding-left: 20px;">
             <li><strong>Live Construction Progress:</strong> Completed milestone steps & checkpoints (Foundation, Nim Bharna, RCC, Water Tank, Finishing).</li>
             <li><strong>Payment & Balance:</strong> Dates and amounts of all payments recorded and balance due.</li>
-            <li><strong>Official Payment Slips:</strong> Download verified GST digital receipts/slips anytime.</li>
+            <li><strong>Official Payment Slips:</strong> Download verified GST digital receipts/slips anytime directly from the app.</li>
             <li><strong>Material Deliveries:</strong> Number of Trucks, Litres, and Bags delivered to your site.</li>
-            <li><strong>Site Agreement:</strong> View your signed site agreement document.</li>
+            <li><strong>Site Agreement & Photos:</strong> View your signed site agreement document and site photos.</li>
           </ul>
 
           <!-- Credentials Box -->
-          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border: 1.5px solid #d4af37; border-radius: 10px; padding: 18px; margin-bottom: 22px; color: #ffffff;">
-            <h3 style="margin: 0 0 12px 0; color: #f59e0b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 6px;">
-              🔑 Your Login Credentials (लॉगिन विवरण)
+          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border: 1.5px solid #d4af37; border-radius: 10px; padding: 20px; margin-bottom: 22px; color: #ffffff;">
+            <h3 style="margin: 0 0 14px 0; color: #f59e0b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 8px;">
+              🔑 Your App Login Details (ऐप लॉगिन विवरण)
             </h3>
             <table style="width: 100%; font-size: 14px; border-collapse: collapse; color: #ffffff;">
               <tr>
-                <td style="padding: 6px 0; color: #94a3b8; width: 130px;">Portal Link:</td>
-                <td style="padding: 6px 0; font-weight: 600;">
-                  <a href="${portalUrl}" style="color: #60a5fa; text-decoration: underline;">${portalUrl}</a>
+                <td style="padding: 8px 0; color: #94a3b8; width: 140px;">Official App:</td>
+                <td style="padding: 8px 0; font-weight: 700;">
+                  <a href="${appUrl}" style="color: #60a5fa; text-decoration: underline;">Vishwakarma App (Google Play)</a>
                 </td>
               </tr>
               <tr>
-                <td style="padding: 6px 0; color: #94a3b8;">User ID / Email:</td>
-                <td style="padding: 6px 0; font-weight: 700; color: #38bdf8;">${client.email}</td>
+                <td style="padding: 8px 0; color: #94a3b8;">User ID / Email:</td>
+                <td style="padding: 8px 0; font-weight: 700; color: #38bdf8;">${client.email}</td>
               </tr>
               <tr>
-                <td style="padding: 6px 0; color: #94a3b8;">Password:</td>
-                <td style="padding: 6px 0; font-weight: 800; color: #facc15; font-size: 16px; letter-spacing: 0.5px;">${loginPassword}</td>
+                <td style="padding: 8px 0; color: #94a3b8;">Password:</td>
+                <td style="padding: 8px 0; font-weight: 800; color: #facc15; font-size: 16px; letter-spacing: 0.5px;">${loginPassword}</td>
               </tr>
             </table>
 
-            <!-- Dual Language Action Buttons -->
-            <div style="text-align: center; margin-top: 20px;">
-              <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #b45309 100%); color: #ffffff; padding: 12px 24px; border-radius: 6px; font-weight: 800; font-size: 14px; text-decoration: none; margin: 4px; box-shadow: 0 4px 12px rgba(212,175,55,0.35);">
-                🔑 Login to Client Portal;
+            <!-- Download Button -->
+            <div style="text-align: center; margin-top: 22px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <a href="${appUrl}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: 800; font-size: 15px; text-decoration: none; box-shadow: 0 4px 14px rgba(5,150,105,0.45); letter-spacing: 0.3px;">
+                📲 Download Vishwakarma App (Google Play)
               </a>
-         
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #cbd5e1;">
+                Link: <a href="${appUrl}" style="color: #67e8f9; word-break: break-all;">${appUrl}</a>
+              </p>
             </div>
           </div>
 
-          <!-- Security note -->
-          <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 10px 14px; margin-bottom: 20px; font-size: 12.5px; color: #475569;">
-            <strong>Security Notice / सुरक्षा सूचना:</strong> You can open the link above on your mobile or computer and log in with your email and password to view live construction updates.
+          <!-- Instructions note -->
+          <div style="background-color: #f8fafc; border-left: 4px solid #10b981; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.6;">
+            <strong>How to get started / शुरू कैसे करें:</strong><br/>
+            1. ऊपर दिए गए बटन पर क्लिक करके <strong>Google Play Store</strong> से <strong>Vishwakarma App</strong> डाउनलोड करें।<br/>
+            2. ऐप खोलें और अपना यूजर आईडी (<strong>${client.email}</strong>) व पासवर्ड (<strong>${loginPassword}</strong>) डालकर लॉगिन करें।
           </div>
 
           <!-- Footer -->

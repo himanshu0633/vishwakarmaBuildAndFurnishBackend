@@ -137,7 +137,7 @@ const clientSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'planning', 'in_progress', 'completed', 'on_hold'],
+    enum: ['active', 'planning', 'in_progress', 'completed', 'on_hold', 'draft'],
     default: 'active'
   },
   startDate: {
