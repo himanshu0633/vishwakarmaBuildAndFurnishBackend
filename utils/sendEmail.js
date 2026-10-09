@@ -302,7 +302,6 @@ const sendClientWelcomeEmail = async ({ client, loginPassword, appDownloadUrl })
             <li><strong>Live Construction Progress:</strong> Completed milestone steps & checkpoints (Foundation, Nim Bharna, RCC, Water Tank, Finishing).</li>
             <li><strong>Payment & Balance:</strong> Dates and amounts of all payments recorded and balance due.</li>
             <li><strong>Official Payment Slips:</strong> Download verified GST digital receipts/slips anytime directly from the app.</li>
-            <li><strong>Material Deliveries:</strong> Number of Trucks, Litres, and Bags delivered to your site.</li>
             <li><strong>Site Agreement & Photos:</strong> View your signed site agreement document and site photos.</li>
           </ul>
 

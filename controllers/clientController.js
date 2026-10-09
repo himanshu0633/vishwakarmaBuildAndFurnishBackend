@@ -118,12 +118,20 @@ exports.getAllClients = async (req, res) => {
       clients.map(async (client) => {
         const payments = await ClientPayment.find({ clientId: client._id, isDeleted: { $ne: true } });
         const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const remainingBalance = Math.max(0, (client.contractAmount || 0) - totalPaid);
+        const extraWorks = client.extraWorks || [];
+        const totalApprovedExtraCost = extraWorks
+          .filter((w) => w.status === 'approved')
+          .reduce((sum, w) => sum + (Number(w.cost) || 0), 0);
+        const revisedContractAmount = (client.contractAmount || 0) + totalApprovedExtraCost;
+        const remainingBalance = Math.max(0, revisedContractAmount - totalPaid);
 
         return {
           ...client.toObject(),
           totalPaid,
+          totalApprovedExtraCost,
+          revisedContractAmount,
           remainingBalance,
+          balanceDue: remainingBalance,
           paymentCount: payments.length,
           progressPercentage: client.progressPercentage
         };

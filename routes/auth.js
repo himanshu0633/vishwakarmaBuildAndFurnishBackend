@@ -4,9 +4,67 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Client = require('../models/Client');
+const ClientPayment = require('../models/ClientPayment');
 const OtpToken = require('../models/OtpToken');
 const { sendOtpEmail } = require('../utils/sendEmail');
 const authMiddleware = require('../middleware/authMiddleware');
+
+const getClientWithFinancials = async (clientDoc) => {
+  if (!clientDoc) return null;
+  const payments = await ClientPayment.find({ clientId: clientDoc._id, isDeleted: { $ne: true } });
+  const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const extraWorks = clientDoc.extraWorks || [];
+  const totalApprovedExtraCost = extraWorks
+    .filter((w) => w.status === 'approved')
+    .reduce((sum, w) => sum + (Number(w.cost) || 0), 0);
+  const baseContract = Number(clientDoc.contractAmount || clientDoc.totalProjectAmount || 0);
+  const revisedContractAmount = baseContract + totalApprovedExtraCost;
+  const remainingBalance = Math.max(0, revisedContractAmount - totalPaid);
+
+  return {
+    ...clientDoc.toObject(),
+    totalPaid,
+    totalApprovedExtraCost,
+    revisedContractAmount,
+    remainingBalance,
+    balanceDue: remainingBalance,
+    financials: {
+      contractAmount: baseContract,
+      totalApprovedExtraCost,
+      revisedContractAmount,
+      totalPaid,
+      remainingBalance,
+      balanceDue: remainingBalance,
+      paymentCount: payments.length,
+    },
+  };
+};
+
+const findUserClient = async (user) => {
+  if (!user) return null;
+  let client = null;
+  if (user.clientId) {
+    client = await Client.findOne({ _id: user.clientId, isDeleted: { $ne: true } });
+  }
+  if (!client) {
+    client = await Client.findOne({
+      $or: [
+        { user: user._id },
+        { email: user.email },
+        ...(user.mobile ? [{ phone: user.mobile }] : []),
+      ],
+      isDeleted: { $ne: true },
+    });
+    if (client && !user.clientId) {
+      user.clientId = client._id;
+      if (user.role !== 'client' && user.role !== 'admin') {
+        user.role = 'client';
+      }
+      await user.save().catch(() => {});
+    }
+  }
+  return client;
+};
 
 const createToken = (user) => jwt.sign(
   {
@@ -205,11 +263,14 @@ router.post('/login', async (req, res) => {
     }
     
     const token = createToken(user);
+    const client = await findUserClient(user);
+    const clientData = await getClientWithFinancials(client);
     
     res.json({
       success: true,
       token,
-      user: userPayload(user)
+      user: userPayload(user),
+      client: clientData
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -251,10 +312,15 @@ router.post('/login/otp', async (req, res) => {
     await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
     user.emailVerified = true;
 
+    const token = createToken(user);
+    const client = await findUserClient(user);
+    const clientData = await getClientWithFinancials(client);
+
     res.json({
       success: true,
-      token: createToken(user),
-      user: userPayload(user)
+      token,
+      user: userPayload(user),
+      client: clientData
     });
   } catch (error) {
     console.error('OTP login error:', error);
@@ -311,31 +377,13 @@ router.get('/profile', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    let client = null;
-    if (user.clientId) {
-      client = await Client.findById(user.clientId);
-    }
-    if (!client) {
-      client = await Client.findOne({
-        $or: [
-          { user: user._id },
-          { email: user.email },
-          ...(user.mobile ? [{ phone: user.mobile }] : [])
-        ]
-      });
-      if (client && !user.clientId) {
-        user.clientId = client._id;
-        if (user.role !== 'client' && user.role !== 'admin') {
-          user.role = 'client';
-        }
-        await user.save();
-      }
-    }
+    const client = await findUserClient(user);
+    const clientData = await getClientWithFinancials(client);
 
     res.json({
       success: true,
       user: userPayload(user),
-      client: client || null
+      client: clientData
     });
   } catch (err) {
     console.error('Error fetching profile:', err);
@@ -381,10 +429,14 @@ router.put('/profile', authMiddleware, async (req, res) => {
       });
     }
 
+    const client = await findUserClient(user);
+    const clientData = await getClientWithFinancials(client);
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      user: userPayload(user)
+      user: userPayload(user),
+      client: clientData
     });
   } catch (err) {
     console.error('Error updating profile:', err);
