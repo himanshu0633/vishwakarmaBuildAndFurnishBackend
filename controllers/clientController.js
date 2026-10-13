@@ -6,7 +6,7 @@ const LabourAttendance = require('../models/LabourAttendance');
 const LabourPayment = require('../models/LabourPayment');
 const Material = require('../models/Material');
 const User = require('../models/User');
-const { sendPaymentReceiptEmail, sendClientWelcomeEmail } = require('../utils/sendEmail');
+const { sendPaymentReceiptEmail, sendClientWelcomeEmail, sendSiteMediaUpdateEmail } = require('../utils/sendEmail');
 const { publicUploadPath } = require('../utils/uploadStorage');
 
 // Helper to generate client password: First word of name + '@123'
@@ -1423,11 +1423,29 @@ exports.addSiteMedia = async (req, res) => {
 
     await client.save();
 
+    // Send email notification to client if email exists and not explicitly disabled
+    let emailSent = false;
+    const shouldSendEmail = req.body.sendEmail !== 'false' && req.body.sendEmail !== false;
+    if (client.email && shouldSendEmail) {
+      try {
+        emailSent = await sendSiteMediaUpdateEmail({
+          client,
+          mediaItems: addedItems,
+          stepTitle: req.body.stepTitle,
+          updateTitle: req.body.title,
+          caption: req.body.caption
+        });
+      } catch (emailErr) {
+        console.error('Error sending site media update email:', emailErr);
+      }
+    }
+
     res.status(201).json({
       success: true,
-      message: `${addedItems.length} site media file(s) uploaded successfully`,
+      message: `${addedItems.length} site media file(s) uploaded successfully${emailSent ? ' & progress report email sent to client' : ''}`,
       data: addedItems.length === 1 ? addedItems[0] : addedItems,
-      siteMedia: client.siteMedia
+      siteMedia: client.siteMedia,
+      emailSent: !!emailSent
     });
   } catch (error) {
     console.error('Error adding site media:', error);

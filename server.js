@@ -115,6 +115,7 @@ app.use('/api/partners', require('./routes/partners'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/popups', require('./routes/popups'));
+app.use('/api/email-templates', require('./routes/emailTemplates'));
 app.use(require('./routes/googleReviews'));
 app.use(require('./routes/seo'));
 
